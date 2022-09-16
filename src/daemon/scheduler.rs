@@ -130,9 +130,9 @@ impl<'a, 'b> Scheduler<'a, 'b> {
                             .unwrap();
 
                         notice!(
-                        "Nearest task scheduled to run in {} second(s), sleeping until then + 1s.",
-                        can_sleep_for
-                    );
+                            "Nearest task scheduled to run in {} second(s), sleeping until then.",
+                            can_sleep_for
+                        );
 
                         // NOTE: Waiting for one more second is required as it can otherwise lead
                         // to a very tricky bug: the clock may get to the task's planned time, minus
