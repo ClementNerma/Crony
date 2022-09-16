@@ -62,9 +62,12 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
     };
 
     info!(
-        "Task finished running at {} ; exit status: {}",
+        "Task finished running at {} ({})",
         ended_at.to_rfc2822().bright_magenta(),
-        result
+        match result {
+            TaskResult::Success => format!("{}", result).bright_green(),
+            TaskResult::Failed { code: _ } => format!("{}", result).bright_red(),
+        }
     );
 
     let entry = HistoryEntry {
