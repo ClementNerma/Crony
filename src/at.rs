@@ -85,27 +85,56 @@ impl At {
         })
     }
 
-    pub fn unparse(&self) -> String {
+    pub fn encode(&self) -> String {
         let mut out = vec![];
 
-        if let Some(months) = self.months.unparse() {
-            out.push(format!("M={}", months));
+        if self.months != Occurrences::Every
+            || (self.months == Occurrences::Every && self.days == Occurrences::First)
+        {
+            if let Some(months) = self.months.encode() {
+                out.push(format!("M={}", months));
+            }
         }
 
-        if let Some(days) = self.days.unparse() {
-            out.push(format!("D={}", days));
+        if self.days != Occurrences::Every
+            || self.months != Occurrences::Every
+            || (self.days == Occurrences::Every && self.hours == Occurrences::First)
+        {
+            if let Some(days) = self.days.encode() {
+                out.push(format!("D={}", days));
+            }
         }
 
-        if let Some(hours) = self.hours.unparse() {
-            out.push(format!("h={}", hours));
+        if self.hours != Occurrences::Every
+            || self.days != Occurrences::Every
+            || self.months != Occurrences::Every
+            || (self.hours == Occurrences::Every && self.minutes == Occurrences::First)
+        {
+            if let Some(hours) = self.hours.encode() {
+                out.push(format!("h={}", hours));
+            }
         }
 
-        if let Some(minutes) = self.minutes.unparse() {
-            out.push(format!("m={}", minutes));
+        if self.minutes != Occurrences::Every
+            || self.hours != Occurrences::Every
+            || self.days != Occurrences::Every
+            || self.months != Occurrences::Every
+            || (self.minutes == Occurrences::Every && self.seconds == Occurrences::First)
+        {
+            if let Some(minutes) = self.minutes.encode() {
+                out.push(format!("m={}", minutes));
+            }
         }
 
-        if let Some(seconds) = self.seconds.unparse() {
-            out.push(format!("s={}", seconds));
+        if self.seconds != Occurrences::Every
+            || self.minutes != Occurrences::Every
+            || self.hours != Occurrences::Every
+            || self.days != Occurrences::Every
+            || self.months != Occurrences::Every
+        {
+            if let Some(seconds) = self.seconds.encode() {
+                out.push(format!("s={}", seconds));
+            }
         }
 
         out.join(" ")
@@ -146,7 +175,7 @@ impl At {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub enum Occurrences {
     Every,
     First,
@@ -169,7 +198,7 @@ impl Occurrences {
         }
     }
 
-    pub fn unparse(&self) -> Option<String> {
+    pub fn encode(&self) -> Option<String> {
         match self {
             Self::Every => Some("*".to_string()),
             Self::First => None,

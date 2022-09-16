@@ -50,7 +50,7 @@ fn inner_main() -> Result<()> {
             info!("Found {} tasks:", tasks.len().to_string().bright_yellow());
             info!("");
 
-            let mut table = Table::new("{:>} {:<} {:<} {:<} {:<} {:<}");
+            let mut table = Table::new("{:>} {:<} {:<} {:<} {:<} {:<} {:<}");
 
             for task in tasks.values() {
                 let history = read_history_if_exists(&paths.task_paths(&task.name))?;
@@ -77,6 +77,7 @@ fn inner_main() -> Result<()> {
                     "*".bright_yellow(),
                     task.name.bright_yellow(),
                     display_name,
+                    task.run_at.encode().bright_purple(),
                     last_run,
                     task.shell.bright_magenta(),
                     task.cmd.bright_cyan()
@@ -102,10 +103,10 @@ fn inner_main() -> Result<()> {
                     paths.generate_old_task_dir_name(&name),
                 )
                 .context("Failed to move the previous task's directory")?;
-            } else {
-                fs::create_dir(paths.task_paths(&name).dir())
-                    .context("Failed to create the task's directory")?;
             }
+
+            fs::create_dir(paths.task_paths(&name).dir())
+                .context("Failed to create the task's directory")?;
 
             let run_at = At::parse(&run_at)?;
 

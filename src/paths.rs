@@ -29,7 +29,7 @@ impl Paths {
 
     pub fn generate_old_task_dir_name(&self, task_name: &str) -> PathBuf {
         self.old_tasks_dir
-            .join(format!("{}{}", Local::now().timestamp(), task_name))
+            .join(format!("{}-{}", Local::now().timestamp(), task_name))
     }
 }
 
