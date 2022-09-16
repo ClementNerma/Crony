@@ -10,12 +10,12 @@ use anyhow::Result;
 
 use crate::{error, error_anyhow, paths::Paths, runner::runner, save::read_tasks};
 
-use self::scheduler::Scheduler;
+use self::scheduler::run_tasks;
 
 pub fn start_scheduler(paths: &Paths, args: &DaemonArgs) -> Result<()> {
     let tasks = read_tasks(paths)?;
 
-    Scheduler::new(&tasks, &|task| {
+    run_tasks(&tasks, |task| {
         let result = runner(task, &paths.task_paths(&task.name), !args.direct_output);
 
         if let Err(err) = result {
@@ -23,8 +23,7 @@ pub fn start_scheduler(paths: &Paths, args: &DaemonArgs) -> Result<()> {
             error!("Now sleeping for 5 seconds...");
             std::thread::sleep(Duration::from_secs(5));
         }
-    })?
-    .run();
+    })?;
 
     Ok(())
 }
