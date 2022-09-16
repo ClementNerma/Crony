@@ -4,27 +4,23 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Local};
 
 use crate::{
-    at::Occurrences, error, error_anyhow, info, notice, paths::Paths, runner::runner,
-    save::read_tasks, task::Tasks,
+    at::Occurrences,
+    info, notice,
+    task::{Task, Tasks},
 };
-
-use super::DaemonArgs;
 
 // TODO: this version relies on the `crono`'s crate scheduler
 // This unfortunately requires to hackily convert the occurrence into
 // a cron-formatted string, parse it, and then get the upcoming occurrence
 // Which is obviously far from ideal.
 pub struct Scheduler<'a, 'b> {
-    paths: &'a Paths,
-    args: &'b DaemonArgs,
-    tasks: Tasks,
+    tasks: &'a Tasks,
     cron_schedulers: HashMap<String, cron::Schedule>,
+    task_runner: &'b dyn Fn(&Task),
 }
 
 impl<'a, 'b> Scheduler<'a, 'b> {
-    pub fn new(paths: &'a Paths, args: &'b DaemonArgs) -> Result<Self> {
-        let tasks = read_tasks(paths)?;
-
+    pub fn new(tasks: &'a Tasks, task_runner: &'b dyn Fn(&Task)) -> Result<Self> {
         let cron_schedulers = tasks
             .values()
             .map(|task| {
@@ -54,10 +50,9 @@ impl<'a, 'b> Scheduler<'a, 'b> {
             .collect::<Result<HashMap<_, _>>>()?;
 
         Ok(Self {
-            paths,
-            args,
             tasks,
             cron_schedulers,
+            task_runner,
         })
     }
 
@@ -138,20 +133,10 @@ impl<'a, 'b> Scheduler<'a, 'b> {
                 late_of
             );
 
-            let result = runner(
-                task,
-                &self.paths.task_paths(&task.name),
-                !self.args.direct_output,
-            );
+            (self.task_runner)(task);
 
             queue.push((task, self.upcoming(&task.name)));
             queue.remove(task_index);
-
-            if let Err(err) = result {
-                error_anyhow!(err.context("Runner failed to run (from Scheduler)"));
-                error!("Now sleeping for 5 seconds...");
-                std::thread::sleep(Duration::from_secs(5));
-            }
         }
     }
 }
