@@ -4,12 +4,8 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Local};
 
 use crate::{
-    at::Occurrences,
-    error, error_anyhow, info, notice,
-    paths::Paths,
-    runner::runner,
-    save::read_tasks,
-    task::{Task, Tasks},
+    at::Occurrences, error, error_anyhow, info, notice, paths::Paths, runner::runner,
+    save::read_tasks, task::Tasks,
 };
 
 use super::DaemonArgs;
