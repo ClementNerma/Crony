@@ -5,7 +5,6 @@ mod at;
 mod cmd;
 mod history;
 mod logging;
-mod manager;
 mod paths;
 mod runner;
 mod save;

@@ -9,8 +9,8 @@ use dirs::config_dir;
 
 use crate::{
     history::{History, HistoryEntry},
-    manager::Tasks,
     paths::{Paths, TaskPaths},
+    task::Tasks,
 };
 
 pub fn construct_data_dir_paths(custom_data_dir: Option<PathBuf>) -> Result<Paths> {

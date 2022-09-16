@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use once_cell::sync::Lazy;
 use pomsky_macro::pomsky;
 use regex::Regex;
@@ -7,6 +9,8 @@ use crate::at::At;
 
 static NAME_VALIDATOR: Lazy<Regex> =
     Lazy::new(|| Regex::new(pomsky!(Start ['a'-'z' 'A'-'Z' '0'-'9' '-' '_']+ End)).unwrap());
+
+pub type Tasks = BTreeMap<String, Task>;
 
 #[derive(Serialize, Deserialize)]
 pub struct Task {
