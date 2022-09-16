@@ -78,10 +78,10 @@ fn inner_main() -> Result<()> {
                     "*".bright_blue(),
                     task.name.bright_yellow(),
                     display_name,
-                    task.run_at.encode().bright_black(),
                     last_run,
                     task.shell.bright_magenta(),
-                    task.cmd.bright_cyan()
+                    task.cmd.bright_cyan(),
+                    task.run_at.encode().bright_black(),
                 ));
             }
 
