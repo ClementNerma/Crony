@@ -96,6 +96,10 @@ fn inner_main() -> Result<()> {
             display_name,
             silent,
         }) => {
+            if !Task::is_valid_name(&name) {
+                bail!("The provided name is invalid, only letters, digits, dashes and underscores are allowed.");
+            }
+
             if tasks.contains_key(&name) && !silent {
                 warn!("WARNING: Going to override the existing task!");
 
