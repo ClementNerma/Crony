@@ -17,7 +17,7 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
     let started_at = Local::now();
 
     info!(
-        "Starting task '{}' at {}...",
+        "Starting task '{}' on {}...",
         task.name.bright_yellow(),
         started_at.to_rfc2822().bright_magenta()
     );
@@ -62,7 +62,7 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
     };
 
     info!(
-        "Task finished running at {} ({})",
+        "Task finished running on {} ({})",
         ended_at.to_rfc2822().bright_magenta(),
         match result {
             TaskResult::Success => format!("{}", result).bright_green(),
