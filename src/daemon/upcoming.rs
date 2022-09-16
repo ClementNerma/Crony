@@ -9,6 +9,7 @@ use crate::at::{At, Occurrences};
 // This occurrence finder engine only works with dates that keep validity
 // when changed ; which means that using a day like 30 will make it return an Err()
 // if we're in february.
+// NOTE: This is not a problem if days and months are not used in the patterns.
 pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateTime> {
     let next = after;
 
