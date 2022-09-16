@@ -1,10 +1,10 @@
-use std::{collections::HashMap, str::FromStr, time::Duration};
+use std::time::Duration;
 
 use anyhow::{Context, Result};
-use chrono::Local;
 
 use crate::{
-    at::Occurrences,
+    daemon::upcoming::get_upcoming_moment,
+    datetime::get_now,
     info, notice,
     task::{Task, Tasks},
 };
@@ -15,48 +15,11 @@ use crate::{
 // Which is obviously far from ideal.
 
 pub fn run_tasks(tasks: &Tasks, task_runner: impl Fn(&Task)) -> Result<()> {
-    let cron_schedulers = tasks
-        .values()
-        .map(|task| {
-            let cronify = |occ: &Occurrences, fallback: u8| match occ {
-                Occurrences::First => fallback.to_string(),
-                Occurrences::Every => "*".to_string(),
-                Occurrences::Once(at) => at.to_string(),
-                Occurrences::Multiple(at) => {
-                    at.iter().map(u8::to_string).collect::<Vec<_>>().join(",")
-                }
-            };
-
-            let expr = format!(
-                "{} {} {} {} {} * *",
-                cronify(&task.run_at.seconds, 0),
-                cronify(&task.run_at.minutes, 0),
-                cronify(&task.run_at.hours, 0),
-                cronify(&task.run_at.days, 1),
-                cronify(&task.run_at.months, 1)
-            );
-
-            let schedule =
-                cron::Schedule::from_str(&expr).context("Failed to parse CRONified expression")?;
-
-            Ok((task.name.clone(), schedule))
-        })
-        .collect::<Result<HashMap<_, _>>>()?;
-
-    let upcoming = |task_name: &str| {
-        cron_schedulers
-            .get(task_name)
-            .context("Cached CRON scheduler not found for task")
-            .unwrap()
-            .upcoming(Local)
-            .next()
-            .context("Failed to determine upcoming occurrence")
-            .unwrap()
-    };
+    let now = get_now();
 
     let mut queue = tasks
         .values()
-        .map(|task| (task, upcoming(&task.name)))
+        .map(|task| (task, get_upcoming_moment(now, &task.run_at).unwrap()))
         .collect::<Vec<_>>();
 
     info!("Scheduler is running.");
@@ -68,7 +31,7 @@ pub fn run_tasks(tasks: &Tasks, task_runner: impl Fn(&Task)) -> Result<()> {
             continue;
         }
 
-        let now = Local::now();
+        let now = get_now();
 
         let (task_index, (task, planned_for)) = queue
             .iter()
@@ -81,14 +44,7 @@ pub fn run_tasks(tasks: &Tasks, task_runner: impl Fn(&Task)) -> Result<()> {
 
             let can_sleep_for = queue
                 .iter()
-                .map(|(_, moment)| {
-                    moment
-                        .signed_duration_since(now)
-                        .to_std()
-                        .context("Found negative moment after scheduler comparison")
-                        .unwrap()
-                        .as_secs()
-                })
+                .map(|(_, moment)| (*moment - now).whole_seconds())
                 .min()
                 .context("No future task found in queue, should not be empty")
                 .unwrap();
@@ -101,26 +57,23 @@ pub fn run_tasks(tasks: &Tasks, task_runner: impl Fn(&Task)) -> Result<()> {
             // NOTE: Waiting for one more second is required as it can otherwise lead
             // to a very tricky bug: the clock may get to the task's planned time, minus
             // a few milliseconds or even microseconds. In which case, this will run thousands of times.
-            std::thread::sleep(Duration::from_secs(can_sleep_for + 1));
+            std::thread::sleep(Duration::from_secs(
+                u64::try_from(can_sleep_for + 1)
+                    .context("Found negative elapse time for planned task")
+                    .unwrap(),
+            ));
             continue;
         }
-
-        let late_of = now
-            .signed_duration_since(*planned_for)
-            .to_std()
-            .context("Found negative moment after scheduler comparison")
-            .unwrap()
-            .as_secs();
 
         notice!(
             "Running task '{}' late of {} second(s).",
             task.name,
-            late_of
+            (now - *planned_for).whole_seconds()
         );
 
         task_runner(task);
 
-        queue.push((task, upcoming(&task.name)));
+        queue.push((task, get_upcoming_moment(get_now(), &task.run_at).unwrap()));
         queue.remove(task_index);
     }
 }

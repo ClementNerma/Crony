@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use anyhow::{bail, Context, Result};
-use chrono::{DateTime, Local};
+use time::{format_description::well_known::Iso8601, OffsetDateTime};
 
 pub struct History {
     entries: Vec<HistoryEntry>,
@@ -34,8 +34,8 @@ impl History {
 
 pub struct HistoryEntry {
     pub task_name: String,
-    pub started_at: DateTime<Local>,
-    pub ended_at: DateTime<Local>,
+    pub started_at: OffsetDateTime,
+    pub ended_at: OffsetDateTime,
     pub result: TaskResult,
 }
 
@@ -50,8 +50,10 @@ impl HistoryEntry {
 
         Ok(Self {
             task_name: task_name.to_string(),
-            started_at: str::parse(started_at).context("Failed to parse start date")?,
-            ended_at: str::parse(ended_at).context("Failed to parse end date")?,
+            started_at: OffsetDateTime::parse(started_at, &Iso8601::DEFAULT)
+                .context("Failed to parse start date")?,
+            ended_at: OffsetDateTime::parse(ended_at, &Iso8601::DEFAULT)
+                .context("Failed to parse end date")?,
             result: TaskResult::parse(result).context("Failed to parse task result")?,
         })
     }

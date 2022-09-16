@@ -4,6 +4,7 @@ use std::{
 };
 
 use crate::{
+    datetime::{get_now, human_datetime},
     history::{HistoryEntry, TaskResult},
     info,
     paths::TaskPaths,
@@ -11,15 +12,14 @@ use crate::{
     task::Task,
 };
 use anyhow::{Context, Result};
-use chrono::Local;
 
 pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<HistoryEntry> {
-    let started_at = Local::now();
+    let started_at = get_now();
 
     info!(
         "Starting task '{}' on {}...",
         task.name.bright_yellow(),
-        started_at.to_rfc2822().bright_magenta()
+        human_datetime(started_at).bright_magenta()
     );
 
     let mut shell_cmd_parts = task.shell.split(' ');
@@ -51,7 +51,7 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
 
     let status = cmd.status().context("Failed to run the task's command")?;
 
-    let ended_at = Local::now();
+    let ended_at = get_now();
 
     let result = if status.success() {
         TaskResult::Success
@@ -63,7 +63,7 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
 
     info!(
         "Task finished running on {} ({})",
-        ended_at.to_rfc2822().bright_magenta(),
+        human_datetime(ended_at).bright_magenta(),
         match result {
             TaskResult::Success => format!("{}", result).bright_green(),
             TaskResult::Failed { code: _ } => format!("{}", result).bright_red(),

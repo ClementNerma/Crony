@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use chrono::Local;
+use time::OffsetDateTime;
 
 pub struct Paths {
     pub tasks_file: PathBuf,
@@ -28,8 +28,13 @@ impl Paths {
     }
 
     pub fn generate_old_task_dir_name(&self, task_name: &str) -> PathBuf {
-        self.old_tasks_dir
-            .join(format!("{}-{}", Local::now().timestamp(), task_name))
+        self.old_tasks_dir.join(format!(
+            "{}-{}",
+            OffsetDateTime::now_local()
+                .expect("Failed to get current date/time")
+                .unix_timestamp(),
+            task_name
+        ))
     }
 }
 

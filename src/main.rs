@@ -4,6 +4,7 @@
 mod at;
 mod cmd;
 mod daemon;
+mod datetime;
 mod history;
 mod logging;
 mod paths;
@@ -22,6 +23,7 @@ use crate::{
     at::At,
     cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, SchedulerArgs, UnregisterArgs},
     daemon::start_scheduler,
+    datetime::human_datetime,
     runner::runner,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
     task::Task,
@@ -59,7 +61,7 @@ fn inner_main() -> Result<()> {
                 let last_run = match history.find_last_for(&task.name) {
                     None => "Never run".bright_black().italic(),
                     Some(entry) => {
-                        let time = entry.started_at.format("%Y-%m-%d %H:%M:%S").to_string();
+                        let time = human_datetime(entry.started_at);
 
                         if entry.succeeded() {
                             time.bright_green()

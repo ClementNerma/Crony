@@ -1,6 +1,7 @@
 mod cmd;
 mod notify;
 mod scheduler;
+mod upcoming;
 
 use std::time::Duration;
 
