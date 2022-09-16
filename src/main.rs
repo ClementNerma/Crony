@@ -75,10 +75,10 @@ fn inner_main() -> Result<()> {
                 };
 
                 table.add_row(row!(
-                    "*".bright_yellow(),
+                    "*".bright_blue(),
                     task.name.bright_yellow(),
                     display_name,
-                    task.run_at.encode().bright_purple(),
+                    task.run_at.encode().bright_black(),
                     last_run,
                     task.shell.bright_magenta(),
                     task.cmd.bright_cyan()
