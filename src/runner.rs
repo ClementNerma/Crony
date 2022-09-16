@@ -34,11 +34,13 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
 
     if use_log_files {
         let stdout_file = OpenOptions::new()
+            .create(true)
             .append(true)
             .open(paths.stdout_log_file())
             .context("Failed to open the task's STDOUT log file")?;
 
         let stderr_file = OpenOptions::new()
+            .create(true)
             .append(true)
             .open(paths.stderr_log_file())
             .context("Failed to open the task's STDERR log file")?;
