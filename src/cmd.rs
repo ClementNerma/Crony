@@ -24,6 +24,9 @@ pub enum Action {
 
     #[clap(about = "Run a task immediatly")]
     Run(RunArgs),
+
+    #[clap(about = "Setup a scheduler, allowing to run tasks in background")]
+    Scheduler(SchedulerArgs),
 }
 
 #[derive(Args)]
@@ -67,3 +70,6 @@ pub struct RunArgs {
     )]
     pub use_log_files: bool,
 }
+
+#[derive(Args)]
+pub struct SchedulerArgs {}

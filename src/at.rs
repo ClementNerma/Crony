@@ -161,8 +161,8 @@ impl At {
         };
 
         match occ {
-            Occurrences::Every => {}
             Occurrences::First => unreachable!(),
+            Occurrences::Every => {}
             Occurrences::Once(ref value) => validate(*value)?,
             Occurrences::Multiple(ref values) => {
                 for value in values {
@@ -177,8 +177,8 @@ impl At {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub enum Occurrences {
-    Every,
     First,
+    Every,
     Once(u8),
     Multiple(Vec<u8>),
 }
@@ -200,15 +200,23 @@ impl Occurrences {
 
     pub fn encode(&self) -> Option<String> {
         match self {
-            Self::Every => Some("*".to_string()),
             Self::First => None,
+            Self::Every => Some("*".to_string()),
             Self::Once(num) => Some(num.to_string()),
             Self::Multiple(nums) => Some(
                 nums.iter()
                     .map(|num| num.to_string())
                     .collect::<Vec<_>>()
-                    .join(", "),
+                    .join(","),
             ),
         }
     }
+}
+
+struct VolatileDateTime {
+    month: u8,
+    day: u8,
+    hour: u8,
+    minute: u8,
+    second: u8,
 }

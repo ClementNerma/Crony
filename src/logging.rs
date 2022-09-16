@@ -60,6 +60,17 @@ macro_rules! info_inline {
 }
 
 #[macro_export]
+macro_rules! notice {
+    ($message: tt, $($params: tt)*) => {{
+        println!("{}", $crate::_format!(bright_black => $message, $($params)*));
+    }};
+
+    ($message: tt) => {{
+        notice!($message,)
+    }};
+}
+
+#[macro_export]
 macro_rules! success {
     ($message: tt, $($params: tt)*) => {{
         println!("{}", $crate::_format!(bright_green => $message, $($params)*));

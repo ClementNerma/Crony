@@ -3,6 +3,7 @@
 
 mod at;
 mod cmd;
+mod daemon;
 mod history;
 mod logging;
 mod paths;
@@ -19,7 +20,8 @@ use tabular::{row, Table};
 
 use crate::{
     at::At,
-    cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, UnregisterArgs},
+    cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, SchedulerArgs, UnregisterArgs},
+    daemon::start_scheduler,
     runner::runner,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
     task::Task,
@@ -166,6 +168,11 @@ fn inner_main() -> Result<()> {
                 .with_context(|| format!("Task '{}' does not exist.", name.bright_yellow()))?;
 
             runner(task, &paths.task_paths(&task.name), use_log_files)?;
+        }
+
+        Action::Scheduler(SchedulerArgs {}) => {
+            info!("Starting the scheduler...");
+            start_scheduler(&paths)?;
         }
     }
 
