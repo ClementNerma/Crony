@@ -12,18 +12,21 @@ use crate::{
     task::{Task, Tasks},
 };
 
+use super::DaemonArgs;
+
 // TODO: this version relies on the `crono`'s crate scheduler
 // This unfortunately requires to hackily convert the occurrence into
 // a cron-formatted string, parse it, and then get the upcoming occurrence
 // Which is obviously far from ideal.
-pub struct Scheduler<'a> {
+pub struct Scheduler<'a, 'b> {
     paths: &'a Paths,
+    args: &'b DaemonArgs,
     tasks: Tasks,
     cron_schedulers: HashMap<String, cron::Schedule>,
 }
 
-impl<'a> Scheduler<'a> {
-    pub fn new(paths: &'a Paths) -> Result<Self> {
+impl<'a, 'b> Scheduler<'a, 'b> {
+    pub fn new(paths: &'a Paths, args: &'b DaemonArgs) -> Result<Self> {
         let tasks = read_tasks(paths)?;
 
         let cron_schedulers = tasks
@@ -56,6 +59,7 @@ impl<'a> Scheduler<'a> {
 
         Ok(Self {
             paths,
+            args,
             tasks,
             cron_schedulers,
         })
@@ -153,7 +157,13 @@ impl<'a> Scheduler<'a> {
 
             refresh_scheduling_for = Some(late_task);
 
-            if let Err(err) = runner(late_task, &self.paths.task_paths(&late_task.name), true) {
+            let result = runner(
+                late_task,
+                &self.paths.task_paths(&late_task.name),
+                !self.args.direct_output,
+            );
+
+            if let Err(err) = result {
                 error_anyhow!(err.context("Runner failed to run (from Scheduler)"));
                 error!("Now sleeping for 5 seconds...");
                 std::thread::sleep(Duration::from_secs(5));

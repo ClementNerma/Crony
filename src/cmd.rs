@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
 
+use crate::daemon::DaemonArgs;
+
 #[derive(Parser)]
 pub struct Cmd {
     #[clap(short, long, help = "Path to the data directory")]
@@ -72,4 +74,7 @@ pub struct RunArgs {
 }
 
 #[derive(Args)]
-pub struct SchedulerArgs {}
+pub struct SchedulerArgs {
+    #[clap(flatten)]
+    pub args: DaemonArgs,
+}

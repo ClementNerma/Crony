@@ -174,9 +174,9 @@ fn inner_main() -> Result<()> {
             runner(task, &paths.task_paths(&task.name), use_log_files)?;
         }
 
-        Action::Scheduler(SchedulerArgs {}) => {
+        Action::Scheduler(SchedulerArgs { args }) => {
             info!("Starting the scheduler...");
-            start_scheduler(&paths)?;
+            start_scheduler(&paths, &args)?;
         }
     }
 
