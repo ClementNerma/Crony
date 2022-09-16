@@ -109,41 +109,39 @@ impl<'a, 'b> Scheduler<'a, 'b> {
 
             let now = Local::now();
 
-            let (late_task, should_have_run_at) =
-                match queue.iter().find(|(_, moment)| moment < &now) {
-                    Some(late_task) => late_task,
-                    None => {
-                        notice!("No late task, checking time to sleep...");
+            let (task, planned_for) = queue.iter().min_by_key(|(_, moment)| moment).unwrap();
 
-                        let can_sleep_for = queue
-                            .iter()
-                            .map(|(_, moment)| {
-                                moment
-                                    .signed_duration_since(now)
-                                    .to_std()
-                                    .context("Found negative moment after scheduler comparison")
-                                    .unwrap()
-                                    .as_secs()
-                            })
-                            .min()
-                            .context("No future task found in queue, should not be empty")
-                            .unwrap();
+            if planned_for > &now {
+                notice!("No task to run, checking free time before next task...");
 
-                        notice!(
-                            "Nearest task scheduled to run in {} second(s), sleeping until then.",
-                            can_sleep_for
-                        );
+                let can_sleep_for = queue
+                    .iter()
+                    .map(|(_, moment)| {
+                        moment
+                            .signed_duration_since(now)
+                            .to_std()
+                            .context("Found negative moment after scheduler comparison")
+                            .unwrap()
+                            .as_secs()
+                    })
+                    .min()
+                    .context("No future task found in queue, should not be empty")
+                    .unwrap();
 
-                        // NOTE: Waiting for one more second is required as it can otherwise lead
-                        // to a very tricky bug: the clock may get to the task's planned time, minus
-                        // a few milliseconds or even microseconds. In which case, this will run thousands of times.
-                        std::thread::sleep(Duration::from_secs(can_sleep_for + 1));
-                        continue;
-                    }
-                };
+                notice!(
+                    "Nearest task scheduled to run in {} second(s), sleeping until then.",
+                    can_sleep_for
+                );
+
+                // NOTE: Waiting for one more second is required as it can otherwise lead
+                // to a very tricky bug: the clock may get to the task's planned time, minus
+                // a few milliseconds or even microseconds. In which case, this will run thousands of times.
+                std::thread::sleep(Duration::from_secs(can_sleep_for + 1));
+                continue;
+            }
 
             let late_of = now
-                .signed_duration_since(*should_have_run_at)
+                .signed_duration_since(*planned_for)
                 .to_std()
                 .context("Found negative moment after scheduler comparison")
                 .unwrap()
@@ -151,15 +149,15 @@ impl<'a, 'b> Scheduler<'a, 'b> {
 
             notice!(
                 "Running task '{}' late of {} second(s).",
-                late_task.name,
+                task.name,
                 late_of
             );
 
-            refresh_scheduling_for = Some(late_task);
+            refresh_scheduling_for = Some(task);
 
             let result = runner(
-                late_task,
-                &self.paths.task_paths(&late_task.name),
+                task,
+                &self.paths.task_paths(&task.name),
                 !self.args.direct_output,
             );
 
