@@ -85,22 +85,7 @@ impl<'a, 'b> Scheduler<'a, 'b> {
 
         info!("Scheduler is running.");
 
-        let mut refresh_scheduling_for: Option<&Task> = None;
-
         loop {
-            if let Some(task) = refresh_scheduling_for {
-                let index = queue
-                    .iter()
-                    .position(|(c, _)| c.name == task.name)
-                    .context("Scheduled task to remove was not found in queue")
-                    .unwrap();
-
-                queue.remove(index);
-                queue.push((task, self.upcoming(&task.name)));
-
-                refresh_scheduling_for = None;
-            }
-
             if self.tasks.is_empty() {
                 notice!("No task registered, sleeping for 1 second.");
                 std::thread::sleep(Duration::from_secs(1));
@@ -109,7 +94,11 @@ impl<'a, 'b> Scheduler<'a, 'b> {
 
             let now = Local::now();
 
-            let (task, planned_for) = queue.iter().min_by_key(|(_, moment)| moment).unwrap();
+            let (task_index, (task, planned_for)) = queue
+                .iter()
+                .enumerate()
+                .min_by_key(|(_, (_, moment))| moment)
+                .unwrap();
 
             if planned_for > &now {
                 notice!("No task to run, checking free time before next task...");
@@ -153,13 +142,14 @@ impl<'a, 'b> Scheduler<'a, 'b> {
                 late_of
             );
 
-            refresh_scheduling_for = Some(task);
-
             let result = runner(
                 task,
                 &self.paths.task_paths(&task.name),
                 !self.args.direct_output,
             );
+
+            queue.push((task, self.upcoming(&task.name)));
+            queue.remove(task_index);
 
             if let Err(err) = result {
                 error_anyhow!(err.context("Runner failed to run (from Scheduler)"));
