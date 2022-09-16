@@ -134,10 +134,10 @@ impl TaskResult {
 impl Display for TaskResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            TaskResult::Success => writeln!(f, "Success"),
+            TaskResult::Success => write!(f, "Success"),
             TaskResult::Failed { code } => match code {
-                None => writeln!(f, "Failed (no exit code)"),
-                Some(code) => writeln!(f, "Failed with code {}", code),
+                None => write!(f, "Failed (no exit code)"),
+                Some(code) => write!(f, "Failed with code {}", code),
             },
         }
     }
