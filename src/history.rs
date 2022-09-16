@@ -40,33 +40,6 @@ pub struct HistoryEntry {
 }
 
 impl HistoryEntry {
-    pub fn success(
-        task_name: String,
-        started_at: DateTime<Local>,
-        ended_at: DateTime<Local>,
-    ) -> Self {
-        Self {
-            task_name,
-            started_at,
-            ended_at,
-            result: TaskResult::Success,
-        }
-    }
-
-    pub fn failure(
-        task_name: String,
-        started_at: DateTime<Local>,
-        ended_at: DateTime<Local>,
-        exit_code: Option<i32>,
-    ) -> Self {
-        Self {
-            task_name,
-            started_at,
-            ended_at,
-            result: TaskResult::Failed { code: exit_code },
-        }
-    }
-
     pub fn parse(input: &str) -> Result<Self> {
         let mut segments = input.split(';');
 
@@ -124,7 +97,7 @@ impl TaskResult {
         match self {
             TaskResult::Success => TASK_RESULT_OK.to_string(),
             TaskResult::Failed { code } => match code {
-                Some(code) => format!("{TASK_RESULT_ERR}{}", code.to_string()),
+                Some(code) => format!("{TASK_RESULT_ERR}{}", code),
                 None => format!("{TASK_RESULT_ERR}{}", TASK_RESULT_NO_CODE),
             },
         }
