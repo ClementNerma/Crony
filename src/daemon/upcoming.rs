@@ -215,28 +215,28 @@ fn nearest_value(candidates: &[u8], curr: u8, total: u8) -> (u8, bool) {
         "Candidates slice for the nearest value is empty!"
     );
 
-    let mut nearest = (std::u8::MAX, std::u8::MAX, false);
+    let (_, nearest, overflow) = candidates
+        .iter()
+        .map(|candidate| {
+            let (distance, overflow) = distance_from(*candidate, curr, total);
+            (distance, *candidate, overflow)
+        })
+        .min_by_key(|(distance, _, _)| *distance)
+        .unwrap();
 
-    for candidate in candidates {
-        // Required
-        if *candidate == curr {
-            continue;
-        }
+    (nearest, overflow)
+}
 
-        let overflow = *candidate < curr;
+fn distance_from(candidate: u8, curr: u8, total: u8) -> (u8, bool) {
+    let overflow = candidate < curr;
 
-        let distance = if overflow {
-            *candidate + total - curr
-        } else {
-            *candidate - curr
-        };
+    let distance = if overflow {
+        candidate + total - curr
+    } else {
+        candidate - curr
+    };
 
-        if distance < nearest.0 {
-            nearest = (distance, *candidate, overflow);
-        }
-    }
-
-    (nearest.1, nearest.2)
+    (distance, overflow)
 }
 
 fn days_in_current_month(from: OffsetDateTime) -> u8 {
