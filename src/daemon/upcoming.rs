@@ -192,12 +192,36 @@ fn days_in_current_month(from: OffsetDateTime) -> u8 {
 
 fn next_month(from: OffsetDateTime) -> OffsetDateTime {
     if from.month() == Month::December {
-        next_year(from).replace_month(Month::January).unwrap()
-    } else {
-        from.add(Duration::days(days_in_current_month(from).into()))
+        // Safe as december and january both have the same number of days
+        return next_year(from).replace_month(Month::January).unwrap();
     }
+
+    // Accelerator for days that exist in all months
+    if from.day() < 28 {
+        return from.add(Duration::days(days_in_current_month(from).into()));
+    }
+
+    let from_day = from.day();
+    let mut next = from;
+
+    while days_in_current_month(next) < from_day {
+        // Safe as all months have a '1' day
+        next = next_month(next.replace_day(1).unwrap());
+    }
+
+    // Safe because we just checked that the current month had enough days for this
+    next.replace_day(from_day).unwrap()
 }
 
 fn next_year(from: OffsetDateTime) -> OffsetDateTime {
-    from.replace_year(from.year() + 1).unwrap()
+    let mut inc = 0;
+
+    loop {
+        match from.replace_year(from.year() + inc) {
+            Ok(date) => return date,
+            Err(_) => {
+                inc += 1;
+            }
+        }
+    }
 }
