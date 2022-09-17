@@ -145,7 +145,7 @@ fn inner_main() -> Result<()> {
                 )
             }
 
-            ask_daemon_reload(&paths, 10)?;
+            ask_daemon_reload(&paths)?;
         }
 
         Action::Unregister(UnregisterArgs { name }) => {
@@ -165,7 +165,7 @@ fn inner_main() -> Result<()> {
 
             success!("Successfully removed task {}.", name.bright_yellow());
 
-            ask_daemon_reload(&paths, 10)?;
+            ask_daemon_reload(&paths)?;
         }
 
         Action::Run(RunArgs {

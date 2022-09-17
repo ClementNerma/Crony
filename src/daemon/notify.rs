@@ -22,7 +22,7 @@ pub fn treat_reload_request(paths: &Paths) -> Result<Option<Tasks>> {
     }
 }
 
-pub fn ask_daemon_reload(paths: &Paths, timeout_s: u8) -> Result<()> {
+pub fn ask_daemon_reload(paths: &Paths) -> Result<()> {
     if paths.reload_request_file.is_file() {
         warn!("A reload request is already pending!");
         return Ok(());
@@ -35,8 +35,9 @@ pub fn ask_daemon_reload(paths: &Paths, timeout_s: u8) -> Result<()> {
 
     let mut treated = false;
 
-    for _ in 0..(u64::from(timeout_s) * 1000 / ASK_DAEMON_RELOAD_MS_BETWEEN_CHECKS) {
-        std::thread::sleep(Duration::from_millis(ASK_DAEMON_RELOAD_MS_BETWEEN_CHECKS));
+    // Short timeout as the daemon is supposed to detect changes in ~1s max.
+    for _ in 0..15 {
+        std::thread::sleep(Duration::from_millis(100));
 
         if !paths.reload_request_file.is_file() {
             treated = true;
@@ -52,5 +53,3 @@ pub fn ask_daemon_reload(paths: &Paths, timeout_s: u8) -> Result<()> {
 
     Ok(())
 }
-
-static ASK_DAEMON_RELOAD_MS_BETWEEN_CHECKS: u64 = 200;
