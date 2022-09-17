@@ -17,6 +17,7 @@ use std::fs;
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use colored::Colorize;
+use daemon::ask_daemon_reload;
 use tabular::{row, Table};
 
 use crate::{
@@ -142,7 +143,7 @@ fn inner_main() -> Result<()> {
                 )
             }
 
-            // TODO: notify daemon
+            ask_daemon_reload(&paths, 10)?;
         }
 
         Action::Unregister(UnregisterArgs { name }) => {
@@ -162,7 +163,7 @@ fn inner_main() -> Result<()> {
 
             success!("Successfully removed task {}.", name.bright_yellow());
 
-            // TODO: notify daemon
+            ask_daemon_reload(&paths, 10)?;
         }
 
         Action::Run(RunArgs {

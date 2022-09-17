@@ -14,7 +14,11 @@ use crate::{
 // a cron-formatted string, parse it, and then get the upcoming occurrence
 // Which is obviously far from ideal.
 
-pub fn run_tasks(tasks: &Tasks, task_runner: impl Fn(&Task)) -> Result<()> {
+pub fn run_tasks(
+    tasks: &Tasks,
+    task_runner: impl Fn(&Task),
+    stop_on: impl Fn() -> bool,
+) -> Result<()> {
     let now = get_now();
 
     let mut queue = tasks
@@ -75,5 +79,9 @@ pub fn run_tasks(tasks: &Tasks, task_runner: impl Fn(&Task)) -> Result<()> {
 
         queue.push((task, get_upcoming_moment(get_now(), &task.run_at).unwrap()));
         queue.remove(task_index);
+
+        if stop_on() {
+            return Ok(());
+        }
     }
 }

@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 
 pub struct Paths {
     pub tasks_file: PathBuf,
-    pub reload_file: PathBuf,
+    pub reload_request_file: PathBuf,
     pub tasks_dir: PathBuf,
     pub old_tasks_dir: PathBuf,
     pub data_dir: PathBuf,
@@ -14,7 +14,7 @@ impl Paths {
     pub fn new(data_dir: PathBuf) -> Self {
         Self {
             tasks_file: data_dir.join("tasks.json"),
-            reload_file: data_dir.join("reload-request.tmp"),
+            reload_request_file: data_dir.join("reload-request.tmp"),
             tasks_dir: data_dir.join("tasks"),
             old_tasks_dir: data_dir.join("tasks.old"),
             data_dir,
