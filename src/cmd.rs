@@ -42,7 +42,7 @@ pub struct RegisterArgs {
     #[clap(help = "The command to run")]
     pub cmd: String,
 
-    #[clap(help = "Times to run at (pattern like '0,12h *m *s */*")]
+    #[clap(help = "Times to run at (pattern like 'D=10,20 h=*")]
     pub run_at: String,
 
     #[clap(short, long, help = "The shell to use")]
