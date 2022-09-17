@@ -1,5 +1,4 @@
 pub mod cmd;
-pub mod daemon;
 pub mod runner;
 pub mod scheduler;
 pub mod upcoming;
