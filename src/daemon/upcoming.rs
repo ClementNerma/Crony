@@ -175,18 +175,29 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
         Occurrences::Multiple(at) => {
             let nearest = nearest_values(at, next.month().into(), 12);
 
-            nearest
+            let mut nearest = nearest
                 .into_iter()
-                .find_map(|(_, month, overflow)| {
-                    let mut next = next.replace_month(Month::try_from(month).unwrap()).ok()?;
-
-                    if overflow {
-                        next = next.replace_year(next.year() + 1).ok()?;
-                    }
-
-                    Some(next)
+                .map(|(_, month, overflow)| {
+                    (0..4)
+                        .filter_map(|years| {
+                            next.replace_year(next.year() + years + if overflow { 1 } else { 0 })
+                                .and_then(|next| {
+                                    next.replace_month(Month::try_from(month).unwrap())
+                                })
+                                .ok()
+                        })
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .next()
+                        .with_context(|| {
+                            format!("Failed to determine a valid date for: {global_at}")
+                        })
                 })
-                .with_context(|| format!("Failed to determine a valid date for: {global_at}"))?
+                .collect::<Result<Vec<_>>>()?;
+
+            nearest.sort_by_key(|moment| *moment - after);
+
+            *nearest.first().unwrap()
         }
     };
 
