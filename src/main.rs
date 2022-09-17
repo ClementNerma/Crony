@@ -177,8 +177,11 @@ fn inner_main() -> Result<()> {
                 .with_context(|| format!("Task '{}' does not exist.", name.bright_yellow()))?;
 
             runner(task, &paths.task_paths(&task.name), use_log_files, || {
-                // TODO: check for reloads
-                false
+                !read_tasks(&paths)
+                    .context("Failed to read potentially-reloaded tasks")
+                    .unwrap()
+                    .values()
+                    .any(|c| c.id == task.id)
             })?;
         }
 
