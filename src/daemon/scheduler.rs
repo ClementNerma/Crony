@@ -41,7 +41,7 @@ pub fn run_tasks(
         if let Some(next) = next {
             if last_displayed_planned != Some(next) {
                 last_displayed_planned.replace(next);
-                notice!("Next task is planned to run at: {}", next);
+                notice!("Next task is planned to run on: {}", next);
             }
         }
 
