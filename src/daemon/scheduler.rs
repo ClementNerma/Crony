@@ -35,9 +35,14 @@ pub fn run_tasks(
 
     let queue = Arc::new(RwLock::new(queue));
 
-    let short_sleep = |next: Option<OffsetDateTime>| {
+    let mut last_displayed_planned = None;
+
+    let mut short_sleep = |next: Option<OffsetDateTime>| {
         if let Some(next) = next {
-            notice!("Next task is planned to run at: {}", next);
+            if last_displayed_planned != Some(next) {
+                last_displayed_planned.replace(next);
+                notice!("Next task is planned to run at: {}", next);
+            }
         }
 
         // Sleep until the next second
