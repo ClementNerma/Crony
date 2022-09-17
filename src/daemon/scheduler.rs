@@ -13,11 +13,6 @@ use crate::{
     task::{Task, Tasks},
 };
 
-// TODO: this version relies on the `crono`'s crate scheduler
-// This unfortunately requires to hackily convert the occurrence into
-// a cron-formatted string, parse it, and then get the upcoming occurrence
-// Which is obviously far from ideal.
-
 pub fn run_tasks(
     tasks: Tasks,
     task_runner: impl Fn(&Task) + Send + Sync + 'static,
