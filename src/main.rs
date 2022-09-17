@@ -1,14 +1,15 @@
 #![forbid(unsafe_code)]
 #![forbid(unused_must_use)]
 
-mod at;
 mod cmd;
+mod daemon;
+mod data;
 mod engine;
-mod history;
-mod runner;
-mod task;
 mod utils;
 
+pub use daemon::*;
+pub use data::*;
+pub use engine::*;
 pub use utils::*;
 
 use std::fs;
@@ -23,8 +24,7 @@ use crate::{
     at::At,
     cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, UnregisterArgs},
     datetime::human_datetime,
-    engine::{ask_daemon_reload, start_daemon, start_engine},
-    runner::runner,
+    engine::{runner::runner, start_engine},
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
     task::Task,
 };

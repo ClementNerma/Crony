@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
 
-use crate::engine::{DaemonArgs, EngineArgs};
+use crate::{daemon::DaemonArgs, engine::cmd::EngineArgs};
 
 #[derive(Parser)]
 pub struct Cmd {

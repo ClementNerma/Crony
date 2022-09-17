@@ -1,24 +1,22 @@
-mod cmd;
-mod daemon;
-mod scheduler;
-mod upcoming;
+pub mod cmd;
+pub mod daemon;
+pub mod runner;
+pub mod scheduler;
+pub mod upcoming;
 
 use std::{
     sync::{Arc, RwLock},
     time::Duration,
 };
 
-pub use cmd::{DaemonArgs, EngineArgs};
-pub use daemon::{ask_daemon_reload, start_daemon};
-
 use anyhow::Result;
 
 use crate::{
     datetime::get_now, error, error_anyhow, paths::Paths, runner::runner, save::read_tasks,
-    success, task::Tasks,
+    success, task::Tasks, treat_reload_request,
 };
 
-use self::{daemon::treat_reload_request, scheduler::run_tasks};
+use self::{cmd::EngineArgs, scheduler::run_tasks};
 
 pub fn start_engine(paths: &Paths, args: &EngineArgs) -> Result<()> {
     treat_reload_request(paths)?;

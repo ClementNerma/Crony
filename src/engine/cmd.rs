@@ -9,9 +9,3 @@ pub struct EngineArgs {
     )]
     pub(super) direct_output: bool,
 }
-
-#[derive(Args)]
-pub struct DaemonArgs {
-    #[clap(flatten)]
-    pub engine_args: EngineArgs,
-}
