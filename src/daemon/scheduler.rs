@@ -59,7 +59,7 @@ pub fn run_tasks(tasks: &Tasks, task_runner: impl Fn(&Task)) -> Result<()> {
             // a few milliseconds or even microseconds. In which case, this will run thousands of times.
             std::thread::sleep(Duration::from_secs(
                 u64::try_from(can_sleep_for + 1)
-                    .context("Found negative elapse time for planned task")
+                    .context("Found negative elapsed time for planned task")
                     .unwrap(),
             ));
             continue;
