@@ -3,7 +3,10 @@ use std::{convert::TryFrom, ops::Add};
 use anyhow::Result;
 use time::{Duration, Month, OffsetDateTime};
 
-use crate::at::{At, Occurrences};
+use crate::{
+    at::{At, Occurrences},
+    datetime::second_precision,
+};
 
 pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateTime> {
     let next = after;
@@ -168,7 +171,21 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
         "Internal error: day changed in upcoming occurrence finder"
     );
 
-    Ok(next)
+    Ok(second_precision(next))
+}
+
+pub fn get_new_upcoming_moment(
+    after: OffsetDateTime,
+    at: &At,
+    last: OffsetDateTime,
+) -> Result<OffsetDateTime> {
+    let upcoming = get_upcoming_moment(after, at)?;
+
+    if upcoming != last {
+        Ok(upcoming)
+    } else {
+        get_upcoming_moment(after.add(Duration::seconds(1)), at)
+    }
 }
 
 fn nearest_value(candidates: &[u8], curr: u8, total: u8) -> (u8, bool) {

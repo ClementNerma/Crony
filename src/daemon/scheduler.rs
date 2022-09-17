@@ -4,11 +4,11 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use crate::{
-    daemon::upcoming::get_upcoming_moment,
-    datetime::get_now,
+    daemon::upcoming::{get_new_upcoming_moment, get_upcoming_moment},
+    datetime::{get_now, get_now_second_precision},
     info, notice,
     task::{Task, Tasks},
 };
@@ -34,34 +34,18 @@ pub fn run_tasks(
 
     let queue = Arc::new(RwLock::new(queue));
 
-    let sleep_for = |seconds: u32| -> bool {
-        let now = get_now();
+    let short_sleep = || {
+        notice!("Nothing to do, sleeping until the next second...");
 
-        while (get_now() - now).whole_seconds() < seconds.into() {
-            std::thread::sleep(Duration::from_secs(1));
-
-            if stop_on() {
-                return true;
-            }
-        }
-
-        false
+        // Sleep until the next second
+        let remaining = 1_000_000_000 - get_now().nanosecond();
+        std::thread::sleep(Duration::from_nanos(remaining.into()));
     };
 
     info!("Scheduler is running.");
 
-    loop {
-        if tasks.is_empty() {
-            notice!("No task registered, sleeping for 1 second.");
-
-            if sleep_for(1) {
-                return Ok(());
-            }
-
-            continue;
-        }
-
-        let now = get_now();
+    while !stop_on() {
+        let now = get_now_second_precision();
 
         let nearest = queue
             .read()
@@ -71,48 +55,18 @@ pub fn run_tasks(
             .map(|(a, b)| (a.clone(), *b));
 
         let (task_name, planned_for) = match nearest {
-            Some(nearest) => nearest,
             None => {
-                notice!("No planned task for now, sleeping for 1 second.");
-                std::thread::sleep(Duration::from_secs(1));
+                short_sleep();
                 continue;
             }
+            Some((_, planned_for)) if planned_for > now => {
+                short_sleep();
+                continue;
+            }
+            Some(nearest) => nearest,
         };
 
-        if planned_for > now {
-            notice!("No task to run, checking free time before next task...");
-
-            let can_sleep_for = queue
-                .read()
-                .unwrap()
-                .iter()
-                .map(|(_, moment)| (*moment - now).whole_seconds())
-                .min()
-                .context("No future task found in queue, should not be empty")
-                .unwrap();
-
-            notice!(
-                "Nearest task scheduled to run in {} second(s), sleeping until then.",
-                can_sleep_for
-            );
-
-            let can_sleep_for: u32 = u64::try_from(can_sleep_for)
-                .context("Found negative waiting time for planned task")
-                .unwrap()
-                .try_into()
-                .context("Found >32-bit waiting time for planned task")
-                .unwrap();
-
-            // NOTE: Waiting for one more second is required as it can otherwise lead
-            // to a very tricky bug: the clock may get to the task's planned time, minus
-            // a few milliseconds or even microseconds. In which case, this will run thousands of times.
-            if sleep_for(can_sleep_for + 1) {
-                return Ok(());
-            }
-            continue;
-        }
-
-        queue.write().unwrap().remove(&task_name);
+        queue.write().unwrap().remove(&task_name).unwrap();
 
         let queue = Arc::clone(&queue);
         let task = tasks.get(&task_name).unwrap().clone();
@@ -129,14 +83,11 @@ pub fn run_tasks(
 
             let mut queue = queue.write().unwrap();
 
-            queue.insert(
-                task.name.clone(),
-                get_upcoming_moment(get_now(), &task.run_at).unwrap(),
-            );
-        });
+            let planned = get_new_upcoming_moment(get_now(), &task.run_at, planned_for).unwrap();
 
-        if stop_on() {
-            return Ok(());
-        }
+            queue.insert(task.name.clone(), planned);
+        });
     }
+
+    Ok(())
 }
