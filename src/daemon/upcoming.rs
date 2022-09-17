@@ -145,24 +145,31 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
             if *at > next.month().into() {
                 let mut next = next;
 
-                while next.month() != goal {
-                    next = next_month(next);
+                'result: loop {
+                    for _ in 1..12 {
+                        if next.month() == goal {
+                            break 'result next;
+                        }
+
+                        next = next_month(next);
+                    }
                 }
-
-                next
             } else {
-                let mut years = 1;
+                let mut found = None;
 
-                loop {
+                for years in 0..4 {
                     if let Ok(next) = next
                         .replace_year(next.year() + years)
                         .and_then(|date| date.replace_month(goal))
                     {
-                        break next;
+                        found = Some(next);
+                        break;
                     }
-
-                    years += 1;
                 }
+
+                found.with_context(|| {
+                    format!("Failed to determine a valid month/year couple for: {global_at}")
+                })?
             }
         }
         Occurrences::Multiple(at) => {
@@ -170,7 +177,7 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
 
             nearest
                 .into_iter()
-                .filter_map(|(_, month, overflow)| {
+                .find_map(|(_, month, overflow)| {
                     let mut next = next.replace_month(Month::try_from(month).unwrap()).ok()?;
 
                     if overflow {
@@ -179,24 +186,17 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
 
                     Some(next)
                 })
-                .next()
-                .with_context(|| {
-                    format!(
-                        "Failed to determine a valid date for: {}",
-                        global_at.encode()
-                    )
-                })?
+                .with_context(|| format!("Failed to determine a valid date for: {global_at}"))?
         }
     };
 
-    if next.second() != set_seconds || next.minute() != set_minutes || next.hour() != set_hours {
+    if next.second() != set_seconds
+        || next.minute() != set_minutes
+        || next.hour() != set_hours
+        || next.day() != set_day
+    {
         return get_upcoming_moment(next, at);
     }
-
-    assert!(
-        next.day() == set_day,
-        "Internal error: day changed in upcoming occurrence finder"
-    );
 
     Ok(second_precision(next))
 }

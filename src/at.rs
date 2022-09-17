@@ -1,4 +1,7 @@
-use std::num::ParseIntError;
+use std::{
+    fmt::{Display, Formatter},
+    num::ParseIntError,
+};
 
 use anyhow::{bail, Context, Result};
 use once_cell::sync::Lazy;
@@ -210,5 +213,11 @@ impl Occurrences {
                     .join(","),
             ),
         }
+    }
+}
+
+impl Display for At {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.encode())
     }
 }
