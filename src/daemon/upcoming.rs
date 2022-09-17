@@ -1,6 +1,5 @@
 use std::{convert::TryFrom, ops::Add};
 
-use anyhow::Result;
 use time::{Duration, Month, OffsetDateTime};
 
 use crate::{
@@ -8,7 +7,7 @@ use crate::{
     datetime::second_precision,
 };
 
-pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateTime> {
+pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> OffsetDateTime {
     let next = after;
 
     let next = match &at.seconds {
@@ -111,13 +110,13 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
             if *at > next.day() {
                 next.replace_day(*at).unwrap()
             } else {
-                next_month(next).replace_day(*at)?
+                month_with_day(next, *at, false)
             }
         }
         Occurrences::Multiple(at) => {
             let (nearest, overflow) = nearest_value(at, next.day(), days_in_current_month(next));
 
-            let mut next = next.replace_day(nearest)?;
+            let mut next = month_with_day(next, nearest, true);
 
             if overflow {
                 next = next_month(next);
@@ -143,16 +142,38 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
         }
         Occurrences::Every => next,
         Occurrences::Once(at) => {
+            let goal = Month::try_from(*at).unwrap();
+
             if *at > next.month().into() {
-                next.replace_month(Month::try_from(*at).unwrap())?
+                let mut next = next;
+
+                while next.month() != goal {
+                    next = next_month(next);
+                }
+
+                next
             } else {
-                next_year(next).replace_month(Month::try_from(*at).unwrap())?
+                let mut years = 1;
+
+                loop {
+                    if let Ok(next) = next
+                        .replace_year(next.year() + years)
+                        .and_then(|date| date.replace_month(goal))
+                    {
+                        break next;
+                    }
+
+                    years += 1;
+                }
             }
         }
         Occurrences::Multiple(at) => {
-            let (nearest, overflow) = nearest_value(at, next.month().into(), 12);
+            // TODO: sort values by nearest, then try them one by one
 
-            let mut next = next.replace_month(Month::try_from(nearest).unwrap())?;
+            let (nearest, overflow) = nearest_value(at, next.month().into(), 12);
+            let goal = Month::try_from(nearest).unwrap();
+
+            let mut next = next.replace_month(goal).unwrap();
 
             if overflow {
                 next = next_year(next);
@@ -171,18 +192,18 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
         "Internal error: day changed in upcoming occurrence finder"
     );
 
-    Ok(second_precision(next))
+    second_precision(next)
 }
 
 pub fn get_new_upcoming_moment(
     after: OffsetDateTime,
     at: &At,
     last: OffsetDateTime,
-) -> Result<OffsetDateTime> {
-    let upcoming = get_upcoming_moment(after, at)?;
+) -> OffsetDateTime {
+    let upcoming = get_upcoming_moment(after, at);
 
     if upcoming != last {
-        Ok(upcoming)
+        upcoming
     } else {
         get_upcoming_moment(after.add(Duration::seconds(1)), at)
     }
@@ -243,8 +264,16 @@ fn next_month(from: OffsetDateTime) -> OffsetDateTime {
         return from.add(Duration::days(days_in_current_month(from).into()));
     }
 
-    let from_day = from.day();
-    let mut next = from;
+    month_with_day(from, from.day(), false)
+}
+
+fn month_with_day(from: OffsetDateTime, from_day: u8, try_current_month: bool) -> OffsetDateTime {
+    // Safe as all months have a '1' day
+    let mut next = if try_current_month {
+        from
+    } else {
+        next_month(from.replace_day(1).unwrap())
+    };
 
     while days_in_current_month(next) < from_day {
         // Safe as all months have a '1' day

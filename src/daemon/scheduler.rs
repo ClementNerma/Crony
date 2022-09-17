@@ -24,12 +24,7 @@ pub fn run_tasks(
 
     let queue = tasks
         .values()
-        .map(|task| {
-            (
-                task.name.clone(),
-                get_upcoming_moment(now, &task.run_at).unwrap(),
-            )
-        })
+        .map(|task| (task.name.clone(), get_upcoming_moment(now, &task.run_at)))
         .collect::<HashMap<_, _>>();
 
     let queue = Arc::new(RwLock::new(queue));
@@ -83,7 +78,7 @@ pub fn run_tasks(
 
             let mut queue = queue.write().unwrap();
 
-            let planned = get_new_upcoming_moment(get_now(), &task.run_at, planned_for).unwrap();
+            let planned = get_new_upcoming_moment(get_now(), &task.run_at, planned_for);
 
             queue.insert(task.name.clone(), planned);
         });
