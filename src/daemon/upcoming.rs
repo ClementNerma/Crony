@@ -1,5 +1,6 @@
 use std::{convert::TryFrom, ops::Add};
 
+use anyhow::{Context, Result};
 use time::{Duration, Month, OffsetDateTime};
 
 use crate::{
@@ -7,8 +8,11 @@ use crate::{
     datetime::second_precision,
 };
 
-pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> OffsetDateTime {
+// NOTE: This function will fail to run when providing an invalid 'at'
+//  e.g. day = 30 ; month = 2
+pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateTime> {
     let next = after;
+    let global_at = at;
 
     let next = match &at.seconds {
         Occurrences::First => {
@@ -106,13 +110,7 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> OffsetDateTime {
             }
         }
         Occurrences::Every => next, //.add(Duration::days(1)),
-        Occurrences::Once(at) => {
-            if *at > next.day() {
-                next.replace_day(*at).unwrap()
-            } else {
-                month_with_day(next, *at, false)
-            }
-        }
+        Occurrences::Once(at) => month_with_day(next, *at, *at <= next.day()),
         Occurrences::Multiple(at) => {
             let (nearest, overflow) = nearest_value(at, next.day(), days_in_current_month(next));
 
@@ -168,18 +166,26 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> OffsetDateTime {
             }
         }
         Occurrences::Multiple(at) => {
-            // TODO: sort values by nearest, then try them one by one
+            let nearest = nearest_values(at, next.month().into(), 12);
 
-            let (nearest, overflow) = nearest_value(at, next.month().into(), 12);
-            let goal = Month::try_from(nearest).unwrap();
+            nearest
+                .into_iter()
+                .filter_map(|(_, month, overflow)| {
+                    let mut next = next.replace_month(Month::try_from(month).unwrap()).ok()?;
 
-            let mut next = next.replace_month(goal).unwrap();
+                    if overflow {
+                        next = next.replace_year(next.year() + 1).ok()?;
+                    }
 
-            if overflow {
-                next = next_year(next);
-            }
-
-            next
+                    Some(next)
+                })
+                .next()
+                .with_context(|| {
+                    format!(
+                        "Failed to determine a valid date for: {}",
+                        global_at.encode()
+                    )
+                })?
         }
     };
 
@@ -192,18 +198,18 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> OffsetDateTime {
         "Internal error: day changed in upcoming occurrence finder"
     );
 
-    second_precision(next)
+    Ok(second_precision(next))
 }
 
 pub fn get_new_upcoming_moment(
     after: OffsetDateTime,
     at: &At,
     last: OffsetDateTime,
-) -> OffsetDateTime {
-    let upcoming = get_upcoming_moment(after, at);
+) -> Result<OffsetDateTime> {
+    let upcoming = get_upcoming_moment(after, at)?;
 
     if upcoming != last {
-        upcoming
+        Ok(upcoming)
     } else {
         get_upcoming_moment(after.add(Duration::seconds(1)), at)
     }
@@ -225,6 +231,19 @@ fn nearest_value(candidates: &[u8], curr: u8, total: u8) -> (u8, bool) {
         .unwrap();
 
     (nearest, overflow)
+}
+
+fn nearest_values(candidates: &[u8], curr: u8, total: u8) -> Vec<(u8, u8, bool)> {
+    let mut nearest = candidates
+        .iter()
+        .map(|candidate| {
+            let (distance, overflow) = distance_from(*candidate, curr, total);
+            (distance, *candidate, overflow)
+        })
+        .collect::<Vec<_>>();
+
+    nearest.sort_by_key(|(distance, _, _)| *distance);
+    nearest
 }
 
 fn distance_from(candidate: u8, curr: u8, total: u8) -> (u8, bool) {

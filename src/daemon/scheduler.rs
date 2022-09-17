@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
+use time::OffsetDateTime;
 
 use crate::{
     daemon::upcoming::{get_new_upcoming_moment, get_upcoming_moment},
@@ -24,13 +25,20 @@ pub fn run_tasks(
 
     let queue = tasks
         .values()
-        .map(|task| (task.name.clone(), get_upcoming_moment(now, &task.run_at)))
+        .map(|task| {
+            (
+                task.name.clone(),
+                get_upcoming_moment(now, &task.run_at).unwrap(),
+            )
+        })
         .collect::<HashMap<_, _>>();
 
     let queue = Arc::new(RwLock::new(queue));
 
-    let short_sleep = || {
-        // notice!("Nothing to do, sleeping until the next second...");
+    let short_sleep = |next: Option<OffsetDateTime>| {
+        if let Some(next) = next {
+            notice!("Next task is planned to run at: {}", next);
+        }
 
         // Sleep until the next second
         let remaining = 1_000_000_000 - get_now().nanosecond();
@@ -51,11 +59,11 @@ pub fn run_tasks(
 
         let (task_name, planned_for) = match nearest {
             None => {
-                short_sleep();
+                short_sleep(None);
                 continue;
             }
             Some((_, planned_for)) if planned_for > now => {
-                short_sleep();
+                short_sleep(Some(planned_for));
                 continue;
             }
             Some(nearest) => nearest,
@@ -78,7 +86,7 @@ pub fn run_tasks(
 
             let mut queue = queue.write().unwrap();
 
-            let planned = get_new_upcoming_moment(get_now(), &task.run_at, planned_for);
+            let planned = get_new_upcoming_moment(get_now(), &task.run_at, planned_for).unwrap();
 
             queue.insert(task.name.clone(), planned);
         });
