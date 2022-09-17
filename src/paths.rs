@@ -4,11 +4,14 @@ use time::OffsetDateTime;
 
 #[derive(Clone)]
 pub struct Paths {
+    pub data_dir: PathBuf,
+
     pub tasks_file: PathBuf,
     pub reload_request_file: PathBuf,
+
     pub tasks_dir: PathBuf,
     pub old_tasks_dir: PathBuf,
-    pub data_dir: PathBuf,
+    pub daemon_dir: PathBuf,
 }
 
 impl Paths {
@@ -16,8 +19,11 @@ impl Paths {
         Self {
             tasks_file: data_dir.join("tasks.json"),
             reload_request_file: data_dir.join("reload-request.tmp"),
+
             tasks_dir: data_dir.join("tasks"),
             old_tasks_dir: data_dir.join("tasks.old"),
+            daemon_dir: data_dir.join("daemon"),
+
             data_dir,
         }
     }
@@ -25,6 +31,12 @@ impl Paths {
     pub fn task_paths(&self, task_name: &str) -> TaskPaths {
         TaskPaths {
             task_dir: self.tasks_dir.join(task_name),
+        }
+    }
+
+    pub fn daemon_paths(&self) -> DaemonPaths {
+        DaemonPaths {
+            daemon_dir: self.daemon_dir.clone(),
         }
     }
 
@@ -58,5 +70,27 @@ impl TaskPaths {
 
     pub fn stderr_log_file(&self) -> PathBuf {
         self.task_dir.join("stderr.log")
+    }
+}
+
+pub struct DaemonPaths {
+    daemon_dir: PathBuf,
+}
+
+impl DaemonPaths {
+    pub fn dir(&self) -> &Path {
+        &self.daemon_dir
+    }
+
+    pub fn pid_file(&self) -> PathBuf {
+        self.daemon_dir.join("daemon.pid")
+    }
+
+    pub fn stdout_log_file(&self) -> PathBuf {
+        self.daemon_dir.join("stdout.log")
+    }
+
+    pub fn stderr_log_file(&self) -> PathBuf {
+        self.daemon_dir.join("stderr.log")
     }
 }

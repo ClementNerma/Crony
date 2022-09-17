@@ -3,8 +3,8 @@
 
 mod at;
 mod cmd;
-mod daemon;
 mod datetime;
+mod engine;
 mod history;
 mod logging;
 mod paths;
@@ -17,15 +17,14 @@ use std::fs;
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use colored::Colorize;
-use daemon::ask_daemon_reload;
 use rand::random;
 use tabular::{row, Table};
 
 use crate::{
     at::At,
-    cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, SchedulerArgs, UnregisterArgs},
-    daemon::start_scheduler,
+    cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, UnregisterArgs},
     datetime::human_datetime,
+    engine::{ask_daemon_reload, start_daemon, start_engine},
     runner::runner,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
     task::Task,
@@ -185,9 +184,14 @@ fn inner_main() -> Result<()> {
             })?;
         }
 
-        Action::Scheduler(SchedulerArgs { args }) => {
-            info!("Starting the scheduler...");
-            start_scheduler(&paths, args)?;
+        Action::Foreground(args) => {
+            info!("Starting the engine (foreground)...");
+            start_engine(&paths, &args)?;
+        }
+
+        Action::Daemon(args) => {
+            info!("Starting the daemon...");
+            start_daemon(&paths, &args)?;
         }
     }
 

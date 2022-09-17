@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
 
-use crate::daemon::DaemonArgs;
+use crate::engine::{DaemonArgs, EngineArgs};
 
 #[derive(Parser)]
 pub struct Cmd {
@@ -27,8 +27,11 @@ pub enum Action {
     #[clap(about = "Run a task immediatly")]
     Run(RunArgs),
 
-    #[clap(about = "Setup a scheduler, allowing to run tasks in background")]
-    Scheduler(SchedulerArgs),
+    #[clap(about = "Run the engine in foreground")]
+    Foreground(EngineArgs),
+
+    #[clap(about = "Start the daemon")]
+    Daemon(DaemonArgs),
 }
 
 #[derive(Args)]
@@ -71,10 +74,4 @@ pub struct RunArgs {
         help = "Redirect output to the log files instead of STDOUT/STDERR"
     )]
     pub use_log_files: bool,
-}
-
-#[derive(Args)]
-pub struct SchedulerArgs {
-    #[clap(flatten)]
-    pub args: DaemonArgs,
 }

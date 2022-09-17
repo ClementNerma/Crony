@@ -8,11 +8,12 @@ use anyhow::Result;
 use time::OffsetDateTime;
 
 use crate::{
-    daemon::upcoming::{get_new_upcoming_moment, get_upcoming_moment},
     datetime::{get_now, get_now_second_precision},
     info, notice,
     task::{Task, Tasks},
 };
+
+use super::upcoming::{get_new_upcoming_moment, get_upcoming_moment};
 
 pub fn run_tasks(
     tasks: Tasks,
