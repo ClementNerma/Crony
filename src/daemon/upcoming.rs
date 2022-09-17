@@ -5,11 +5,6 @@ use time::{Duration, Month, OffsetDateTime};
 
 use crate::at::{At, Occurrences};
 
-// NOTE: *VERY IMPORTANT* (TODO)
-// This occurrence finder engine only works with dates that keep validity
-// when changed ; which means that using a day like 30 will make it return an Err()
-// if we're in february.
-// NOTE: This is not a problem if days and months are not used in the patterns.
 pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateTime> {
     let next = after;
 
@@ -37,6 +32,8 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
         }
     };
 
+    let set_seconds = next.second();
+
     let next = match &at.minutes {
         Occurrences::First => {
             if next.minute() == 0 {
@@ -61,6 +58,13 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
         }
     };
 
+    // Required check for leap seconds
+    if next.second() != set_seconds {
+        return get_upcoming_moment(next, at);
+    }
+
+    let set_minutes = next.minute();
+
     let next = match &at.hours {
         Occurrences::First => {
             if next.hour() == 0 {
@@ -84,6 +88,12 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
                 .add(Duration::days(if overflow { 1 } else { 0 }))
         }
     };
+
+    if next.second() != set_seconds || next.minute() != set_minutes {
+        return get_upcoming_moment(next, at);
+    }
+
+    let set_hours = next.hour();
 
     let next = match &at.days {
         Occurrences::First => {
@@ -114,6 +124,12 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
         }
     };
 
+    if next.second() != set_seconds || next.minute() != set_minutes || next.hour() != set_hours {
+        return get_upcoming_moment(next, at);
+    }
+
+    let set_day = next.day();
+
     let next = match &at.months {
         Occurrences::First => {
             if next.month() == Month::January {
@@ -142,6 +158,15 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
             next
         }
     };
+
+    if next.second() != set_seconds || next.minute() != set_minutes || next.hour() != set_hours {
+        return get_upcoming_moment(next, at);
+    }
+
+    assert!(
+        next.day() == set_day,
+        "Internal error: day changed in upcoming occurrence finder"
+    );
 
     Ok(next)
 }
