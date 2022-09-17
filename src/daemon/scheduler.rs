@@ -39,12 +39,30 @@ pub fn run_tasks(
 
     let queue = Arc::new(RwLock::new(queue));
 
+    let sleep_for = |seconds: u32| -> bool {
+        let now = get_now();
+
+        while (get_now() - now).whole_seconds() < seconds.into() {
+            std::thread::sleep(Duration::from_secs(1));
+
+            if stop_on() {
+                return true;
+            }
+        }
+
+        false
+    };
+
     info!("Scheduler is running.");
 
     loop {
         if tasks.is_empty() {
             notice!("No task registered, sleeping for 1 second.");
-            std::thread::sleep(Duration::from_secs(1));
+
+            if sleep_for(1) {
+                return Ok(());
+            }
+
             continue;
         }
 
@@ -83,14 +101,19 @@ pub fn run_tasks(
                 can_sleep_for
             );
 
+            let can_sleep_for: u32 = u64::try_from(can_sleep_for)
+                .context("Found negative waiting time for planned task")
+                .unwrap()
+                .try_into()
+                .context("Found >32-bit waiting time for planned task")
+                .unwrap();
+
             // NOTE: Waiting for one more second is required as it can otherwise lead
             // to a very tricky bug: the clock may get to the task's planned time, minus
             // a few milliseconds or even microseconds. In which case, this will run thousands of times.
-            std::thread::sleep(Duration::from_secs(
-                u64::try_from(can_sleep_for + 1)
-                    .context("Found negative elapsed time for planned task")
-                    .unwrap(),
-            ));
+            if sleep_for(can_sleep_for + 1) {
+                return Ok(());
+            }
             continue;
         }
 

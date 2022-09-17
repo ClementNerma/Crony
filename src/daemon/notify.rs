@@ -6,16 +6,19 @@ use crate::{
     datetime::{get_now, human_datetime},
     info,
     paths::Paths,
+    save::read_tasks,
+    success,
+    task::Tasks,
     warn,
 };
 
-pub fn treat_reload_request(paths: &Paths) -> Result<bool> {
+pub fn treat_reload_request(paths: &Paths) -> Result<Option<Tasks>> {
     if paths.reload_request_file.is_file() {
         fs::remove_file(&paths.reload_request_file)
             .context("Failed to remove the reload request file")?;
-        Ok(true)
+        Ok(Some(read_tasks(paths)?))
     } else {
-        Ok(false)
+        Ok(None)
     }
 }
 
@@ -41,8 +44,10 @@ pub fn ask_daemon_reload(paths: &Paths, timeout_s: u8) -> Result<()> {
         }
     }
 
-    if treated {
+    if !treated {
         warn!("Timeout reached, is the daemon started?");
+    } else {
+        success!("Daemon successfully treated the reload request.");
     }
 
     Ok(())

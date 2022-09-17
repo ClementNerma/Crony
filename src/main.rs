@@ -18,6 +18,7 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 use colored::Colorize;
 use daemon::ask_daemon_reload;
+use rand::random;
 use tabular::{row, Table};
 
 use crate::{
@@ -121,6 +122,7 @@ fn inner_main() -> Result<()> {
             tasks.insert(
                 name.clone(),
                 Task {
+                    id: random(),
                     name: name.clone(),
                     display_name: display_name.clone(),
                     run_at,
@@ -174,7 +176,10 @@ fn inner_main() -> Result<()> {
                 .get(&name)
                 .with_context(|| format!("Task '{}' does not exist.", name.bright_yellow()))?;
 
-            runner(task, &paths.task_paths(&task.name), use_log_files)?;
+            runner(task, &paths.task_paths(&task.name), use_log_files, || {
+                // TODO: check for reloads
+                false
+            })?;
         }
 
         Action::Scheduler(SchedulerArgs { args }) => {

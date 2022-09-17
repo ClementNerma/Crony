@@ -62,8 +62,8 @@ impl HistoryEntry {
         format!(
             "{};{};{};{}",
             self.task_name,
-            self.started_at,
-            self.ended_at,
+            self.started_at.format(&Iso8601::DEFAULT).unwrap(),
+            self.ended_at.format(&Iso8601::DEFAULT).unwrap(),
             self.result.encode()
         )
     }

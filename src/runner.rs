@@ -10,10 +10,16 @@ use crate::{
     paths::TaskPaths,
     save::append_to_history,
     task::Task,
+    warn,
 };
 use anyhow::{Context, Result};
 
-pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<HistoryEntry> {
+pub fn runner(
+    task: &Task,
+    paths: &TaskPaths,
+    use_log_files: bool,
+    was_task_removed: impl FnOnce() -> bool,
+) -> Result<HistoryEntry> {
     let started_at = get_now();
 
     info!(
@@ -78,7 +84,14 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
         result,
     };
 
-    append_to_history(paths, &entry)?;
+    if was_task_removed() {
+        warn!(
+            "Task '{}' was removed during its execution, skipping history update.",
+            task.name
+        );
+    } else {
+        append_to_history(paths, &entry)?;
+    }
 
     Ok(entry)
 }

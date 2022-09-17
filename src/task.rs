@@ -14,6 +14,7 @@ pub type Tasks = BTreeMap<String, Task>;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Task {
+    pub id: u64,
     pub name: String,
     pub display_name: Option<String>,
     pub run_at: At,
