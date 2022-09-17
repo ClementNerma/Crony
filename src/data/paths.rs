@@ -82,8 +82,8 @@ impl DaemonPaths {
         &self.daemon_dir
     }
 
-    pub fn pid_file(&self) -> PathBuf {
-        self.daemon_dir.join("daemon.pid")
+    pub fn socket_file(&self) -> PathBuf {
+        self.daemon_dir.join("daemon.sock")
     }
 
     pub fn stdout_log_file(&self) -> PathBuf {

@@ -1,4 +1,5 @@
 mod cmd;
+mod server;
 
 pub use cmd::DaemonArgs;
 
@@ -12,9 +13,11 @@ use anyhow::{Context, Result};
 use daemonize_me::Daemon;
 
 use crate::{
+    daemon::server::daemon::process,
     datetime::{get_now, human_datetime},
     engine::start_engine,
     error_anyhow, info,
+    ipc::{create_socket, serve_on_socket},
     paths::Paths,
     save::read_tasks,
     success,
@@ -42,7 +45,7 @@ pub fn start_daemon(paths: &Paths, args: &DaemonArgs) -> Result<()> {
         .context("Failed to open the daemon's STDOUT log file")?;
 
     Daemon::new()
-        .pid_file(d_paths.pid_file(), Some(false))
+        // .pid_file(d_paths.pid_file(), Some(false))
         .stdout(stdout_file)
         .stderr(stderr_file)
         .setup_post_fork_parent_hook(fork_exit)
@@ -50,8 +53,14 @@ pub fn start_daemon(paths: &Paths, args: &DaemonArgs) -> Result<()> {
         .context("Failed to start the daemon")?;
 
     info!("Successfully started the daemon on {}", get_now());
-    info!("Starting the engine...");
+    info!("Setting up the socket...");
 
+    let socket = create_socket(&d_paths.socket_file()).unwrap();
+
+    info!("Launching a separate thread for the socket listener...");
+    std::thread::spawn(|| serve_on_socket(socket, process));
+
+    info!("Starting the engine...");
     match start_engine(paths, &args.engine_args) {
         Ok(()) => warn!("Engine's loop broke, exiting the daemon."),
         Err(err) => error_anyhow!(err.context("Engine returned an error")),

@@ -5,6 +5,7 @@ mod cmd;
 mod daemon;
 mod data;
 mod engine;
+mod ipc;
 mod utils;
 
 pub use daemon::*;
