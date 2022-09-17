@@ -35,7 +35,7 @@ pub fn run_tasks(
     let queue = Arc::new(RwLock::new(queue));
 
     let short_sleep = || {
-        notice!("Nothing to do, sleeping until the next second...");
+        // notice!("Nothing to do, sleeping until the next second...");
 
         // Sleep until the next second
         let remaining = 1_000_000_000 - get_now().nanosecond();
