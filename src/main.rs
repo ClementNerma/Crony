@@ -179,7 +179,7 @@ fn inner_main() -> Result<()> {
 
         Action::Scheduler(SchedulerArgs { args }) => {
             info!("Starting the scheduler...");
-            start_scheduler(&paths, &args)?;
+            start_scheduler(&paths, args)?;
         }
     }
 

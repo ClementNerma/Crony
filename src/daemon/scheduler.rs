@@ -1,4 +1,8 @@
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 
 use anyhow::{Context, Result};
 
@@ -15,16 +19,25 @@ use crate::{
 // Which is obviously far from ideal.
 
 pub fn run_tasks(
-    tasks: &Tasks,
-    task_runner: impl Fn(&Task),
+    tasks: Tasks,
+    task_runner: impl Fn(&Task) + Send + Sync + 'static,
     stop_on: impl Fn() -> bool,
 ) -> Result<()> {
+    let task_runner = Arc::new(RwLock::new(task_runner));
+
     let now = get_now();
 
-    let mut queue = tasks
+    let queue = tasks
         .values()
-        .map(|task| (task, get_upcoming_moment(now, &task.run_at).unwrap()))
-        .collect::<Vec<_>>();
+        .map(|task| {
+            (
+                task.name.clone(),
+                get_upcoming_moment(now, &task.run_at).unwrap(),
+            )
+        })
+        .collect::<HashMap<_, _>>();
+
+    let queue = Arc::new(RwLock::new(queue));
 
     info!("Scheduler is running.");
 
@@ -37,16 +50,28 @@ pub fn run_tasks(
 
         let now = get_now();
 
-        let (task_index, (task, planned_for)) = queue
+        let nearest = queue
+            .read()
+            .unwrap()
             .iter()
-            .enumerate()
-            .min_by_key(|(_, (_, moment))| moment)
-            .unwrap();
+            .min_by_key(|(_, moment)| **moment)
+            .map(|(a, b)| (a.clone(), *b));
 
-        if planned_for > &now {
+        let (task_name, planned_for) = match nearest {
+            Some(nearest) => nearest,
+            None => {
+                notice!("No planned task for now, sleeping for 1 second.");
+                std::thread::sleep(Duration::from_secs(1));
+                continue;
+            }
+        };
+
+        if planned_for > now {
             notice!("No task to run, checking free time before next task...");
 
             let can_sleep_for = queue
+                .read()
+                .unwrap()
                 .iter()
                 .map(|(_, moment)| (*moment - now).whole_seconds())
                 .min()
@@ -69,16 +94,28 @@ pub fn run_tasks(
             continue;
         }
 
+        queue.write().unwrap().remove(&task_name);
+
+        let queue = Arc::clone(&queue);
+        let task = tasks.get(&task_name).unwrap().clone();
+        let task_runner = Arc::clone(&task_runner);
+
         notice!(
             "Running task '{}' late of {} second(s).",
             task.name,
-            (now - *planned_for).whole_seconds()
+            (now - planned_for).whole_seconds()
         );
 
-        task_runner(task);
+        std::thread::spawn(move || {
+            task_runner.read().unwrap()(&task);
 
-        queue.push((task, get_upcoming_moment(get_now(), &task.run_at).unwrap()));
-        queue.remove(task_index);
+            let mut queue = queue.write().unwrap();
+
+            queue.insert(
+                task.name.clone(),
+                get_upcoming_moment(get_now(), &task.run_at).unwrap(),
+            );
+        });
 
         if stop_on() {
             return Ok(());

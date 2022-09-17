@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use time::OffsetDateTime;
 
+#[derive(Clone)]
 pub struct Paths {
     pub tasks_file: PathBuf,
     pub reload_request_file: PathBuf,

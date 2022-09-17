@@ -62,7 +62,8 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
     };
 
     info!(
-        "Task finished running on {} ({})",
+        "Task '{}' finished running on {} ({})",
+        task.name.bright_yellow(),
         human_datetime(ended_at).bright_magenta(),
         match result {
             TaskResult::Success => format!("{}", result).bright_green(),
