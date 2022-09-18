@@ -1,5 +1,5 @@
 use std::{
-    io::{Read, Write},
+    io::{BufRead, BufReader, Write},
     marker::PhantomData,
     os::unix::net::UnixStream,
     path::Path,
@@ -8,7 +8,7 @@ use std::{
 use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::error;
+use super::{Request, Response};
 
 pub struct SocketClient<A: Serialize, B: DeserializeOwned> {
     stream: UnixStream,
@@ -28,25 +28,38 @@ impl<A: Serialize, B: DeserializeOwned> SocketClient<A, B> {
         })
     }
 
-    pub fn send_unchecked_base(&mut self, req: A) -> Result<B> {
-        let req = serde_json::to_string(&req).context("Failed to stringify request for server")?;
+    pub fn send_unchecked(&mut self, req: A) -> Result<::std::result::Result<B, String>> {
+        let req = Request {
+            id: rand::random(),
+            content: req,
+        };
+
+        let mut req_str =
+            serde_json::to_string(&req).context("Failed to stringify request for server")?;
+
+        // Message separator
+        req_str.push('\n');
+
         self.stream
-            .write_all(req.as_bytes())
+            .write_all(req_str.as_bytes())
             .context("Failed to transmit request to server")?;
 
+        self.stream
+            .flush()
+            .context("Failed to flush the server's stream")?;
+
+        let response = BufReader::new(&self.stream)
+            .lines()
+            .next()
+            .context("Failed to get a response from the server")?
+            .context("Failed to retrieve the server's response")?;
+
+        let response = serde_json::from_str::<Response<B>>(&response)
+            .context("Failed to parse server's response")?;
+
         // TODO: queue system with untreated responses
+        assert_eq!(req.id, response.for_id);
 
-        let mut message = String::new();
-
-        while message.is_empty() {
-            self.stream
-                .read_to_string(&mut message)
-                .context("Failed to read response from server")?;
-        }
-
-        let response =
-            serde_json::from_str::<B>(&message).context("Failed to parse server's response")?;
-
-        Ok(response)
+        Ok(response.result)
     }
 }

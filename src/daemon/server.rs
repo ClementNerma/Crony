@@ -2,8 +2,8 @@ use crate::service;
 
 service!(
     daemon {
-        fn greet(name: String) -> Result<String> {
-            Ok(format!("Hello, '{name}'!"))
+        fn hello(__: ()) -> Result<String> {
+            Ok("Hello".to_string())
         }
     }
 );

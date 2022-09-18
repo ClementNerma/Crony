@@ -12,14 +12,18 @@ use crate::{
     task::Task,
     warn,
 };
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 
 pub fn runner(
     task: &Task,
     paths: &TaskPaths,
     use_log_files: bool,
-    was_task_removed: impl FnOnce() -> bool,
+    // was_task_removed: impl FnOnce() -> bool,
 ) -> Result<HistoryEntry> {
+    if !paths.dir().exists() {
+        bail!("Task's directory was not found!");
+    }
+
     let started_at = get_now();
 
     info!(
@@ -84,7 +88,7 @@ pub fn runner(
         result,
     };
 
-    if was_task_removed() {
+    if !paths.dir().exists() {
         warn!(
             "Task '{}' was removed during its execution, skipping history update.",
             task.name

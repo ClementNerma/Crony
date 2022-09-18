@@ -8,7 +8,7 @@ mod engine;
 mod ipc;
 mod utils;
 
-pub use daemon::*;
+use daemon::DaemonStatusArgs;
 pub use data::*;
 pub use engine::*;
 pub use utils::*;
@@ -24,6 +24,7 @@ use tabular::{row, Table};
 use crate::{
     at::At,
     cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, UnregisterArgs},
+    daemon::{check_daemon_status, start_daemon, Client, DaemonClient, DaemonStatus},
     datetime::human_datetime,
     engine::{runner::runner, start_engine},
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
@@ -144,7 +145,7 @@ fn inner_main() -> Result<()> {
                 )
             }
 
-            ask_daemon_reload(&paths)?;
+            // TODO: ask the daemon to reload
         }
 
         Action::Unregister(UnregisterArgs { name }) => {
@@ -164,7 +165,7 @@ fn inner_main() -> Result<()> {
 
             success!("Successfully removed task {}.", name.bright_yellow());
 
-            ask_daemon_reload(&paths)?;
+            // TODO: ask the daemon to reload
         }
 
         Action::Run(RunArgs {
@@ -175,23 +176,45 @@ fn inner_main() -> Result<()> {
                 .get(&name)
                 .with_context(|| format!("Task '{}' does not exist.", name.bright_yellow()))?;
 
-            runner(task, &paths.task_paths(&task.name), use_log_files, || {
-                !read_tasks(&paths)
-                    .context("Failed to read potentially-reloaded tasks")
-                    .unwrap()
-                    .values()
-                    .any(|c| c.id == task.id)
-            })?;
+            runner(task, &paths.task_paths(&task.name), use_log_files)?;
         }
 
         Action::Foreground(args) => {
             info!("Starting the engine (foreground)...");
-            start_engine(&paths, &args)?;
+            start_engine(&paths, &read_tasks(&paths)?, &args, || false);
         }
 
-        Action::Daemon(args) => {
+        Action::DaemonStart(args) => {
             info!("Starting the daemon...");
             start_daemon(&paths, &args)?;
+        }
+
+        Action::DaemonStatus(DaemonStatusArgs {}) => {
+            info!("Checking daemon's status...");
+
+            let socket_file = paths.daemon_paths().socket_file();
+
+            match check_daemon_status(&socket_file)? {
+                DaemonStatus::NoSocketFile | DaemonStatus::NotRunning => {
+                    warn!("Daemon is not running.");
+                    return Ok(());
+                }
+                DaemonStatus::Running => success!("Daemon is running."),
+            }
+
+            let mut client = DaemonClient::connect(&socket_file)?;
+            let res = client.hello(())?;
+
+            match res {
+                Ok(res) => {
+                    if res == "Hello" {
+                        success!("Daemon responses successfully to a test call.");
+                    } else {
+                        error!("Daemon responsed unsuccessfully to a test call.");
+                    }
+                }
+                Err(err) => error!("Daemon returned an error for test call: {err}"),
+            }
         }
     }
 

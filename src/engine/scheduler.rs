@@ -4,7 +4,6 @@ use std::{
     time::Duration,
 };
 
-use anyhow::Result;
 use time::OffsetDateTime;
 
 use crate::{
@@ -16,10 +15,10 @@ use crate::{
 use super::upcoming::{get_new_upcoming_moment, get_upcoming_moment};
 
 pub fn run_tasks(
-    tasks: Tasks,
+    tasks: &Tasks,
     task_runner: impl Fn(&Task) + Send + Sync + 'static,
     stop_on: impl Fn() -> bool,
-) -> Result<()> {
+) {
     let task_runner = Arc::new(RwLock::new(task_runner));
 
     let now = get_now();
@@ -97,6 +96,4 @@ pub fn run_tasks(
             queue.insert(task.name.clone(), planned);
         });
     }
-
-    Ok(())
 }

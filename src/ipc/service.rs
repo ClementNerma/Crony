@@ -1,51 +1,64 @@
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 #[macro_export]
 macro_rules! service {
     ($service_name:ident { $(fn $fn_name:ident($fn_arg_name:ident: $fn_arg_type:tt) -> Result<$fn_ret_type:tt> $content:block)+ }) => {
         pub mod $service_name {
-            pub trait Server {
-                fn process_unchecked(&self, req: RequestContent) -> ::anyhow::Result<ResponseContent>;
-            }
+            use ::anyhow::Result;
+            use ::serde::{Serialize, Deserialize};
 
-            pub trait Client {
-                fn send_unchecked(&self, req: RequestContent) -> ::anyhow::Result<ResponseContent>;
-            }
+            use $crate::ipc::{
+                ServiceClient,
+                Processed
+            };
 
-            pub type Request = $crate::ipc::Request<RequestContent>;
-            pub type Response = $crate::ipc::Request<ResponseContent>;
-
-            #[derive(::serde::Serialize, ::serde::Deserialize)]
+            #[derive(Serialize, Deserialize)]
             #[allow(non_camel_case_types)]
             pub enum RequestContent {
                 $($fn_name { $fn_arg_name: $fn_arg_type }),+
             }
 
-            #[derive(::serde::Serialize, ::serde::Deserialize)]
+            #[derive(Serialize, Deserialize)]
             #[allow(non_camel_case_types)]
             pub enum ResponseContent {
                 $($fn_name($fn_ret_type)),+
             }
 
             mod handlers {
-                $(pub(super) fn $fn_name($fn_arg_name: $fn_arg_type) -> ::anyhow::Result<$fn_ret_type> $content)+
+                $(pub(super) fn $fn_name($fn_arg_name: $fn_arg_type) -> super::Result<$fn_ret_type> $content)+
             }
 
             pub mod senders {
-                $(pub fn $fn_name(client: impl super::Client, $fn_arg_name: $fn_arg_type) -> ::anyhow::Result<$fn_ret_type> {
-                    match super::Client::send_unchecked(&client, super::RequestContent::$fn_name { $fn_arg_name })? {
-                        super::ResponseContent::$fn_name(output) => Ok(output),
+                use ::anyhow::bail;
+                use super::{ServiceClient, RequestContent, ResponseContent, Processed};
+
+                $(pub fn $fn_name(client: &mut impl ServiceClient<RequestContent, ResponseContent>, $fn_arg_name: $fn_arg_type) -> Processed<$fn_ret_type> {
+                    match client.send_unchecked(RequestContent::$fn_name { $fn_arg_name })? {
+                        Ok(ResponseContent::$fn_name(output)) => Ok(Ok(output)),
 
                         #[allow(unreachable_patterns)]
-                        _ => ::anyhow::bail!("Invalid unchecked response variant returned by service client")
+                        Ok(_) => bail!("Invalid unchecked response variant returned by service client"),
+
+                        Err(err) => Ok(Err(err))
                     }
                 })+
             }
 
-            pub fn process(req: RequestContent) -> $crate::ipc::Processed<ResponseContent> {
+            pub fn process(req: RequestContent) -> Result<ResponseContent, String> {
                 match req {
                     $(RequestContent::$fn_name { $fn_arg_name } => handlers::$fn_name($fn_arg_name).map(|value| ResponseContent::$fn_name(value)).map_err(|error| format!("{:?}", error))),+
                 }
+            }
+
+            pub trait Client {
+                type Client: ServiceClient<RequestContent, ResponseContent>;
+
+                fn retrieve_client(&mut self) -> &mut Self::Client;
+
+                $(fn $fn_name(&mut self, $fn_arg_name: $fn_arg_type) -> Processed<$fn_ret_type> {
+                    senders::$fn_name(self.retrieve_client(), $fn_arg_name)
+                })+
             }
         }
     };
@@ -60,7 +73,15 @@ pub struct Request<T> {
 #[derive(Serialize, Deserialize)]
 pub struct Response<T> {
     pub for_id: u64,
-    pub result: ::std::result::Result<T, String>,
+    pub result: Result<T, String>,
 }
 
-pub type Processed<T> = ::std::result::Result<T, String>;
+pub type Processed<T> = Result<Result<T, String>>;
+
+// pub trait Server<Req, Res> {
+//     fn process_unchecked(&self, req: Req) -> Result<Res>;
+// }
+
+pub trait ServiceClient<Req, Res> {
+    fn send_unchecked(&mut self, req: Req) -> Processed<Res>;
+}

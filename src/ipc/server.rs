@@ -1,6 +1,6 @@
 use std::{
     fs,
-    io::{ErrorKind, Read, Write},
+    io::{BufRead, BufReader, Write},
     os::unix::net::{UnixListener, UnixStream},
     path::Path,
     sync::Arc,
@@ -10,21 +10,20 @@ use std::{
 use anyhow::{bail, Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{error, info};
+use crate::{
+    daemon::{check_daemon_status, DaemonStatus},
+    error, info,
+};
 
-use super::{Processed, Request, Response};
+use super::{Request, Response};
 
 pub fn create_socket(socket_path: &Path) -> Result<UnixListener> {
-    if socket_path.exists() {
-        match UnixStream::connect(socket_path) {
-            Ok(_) => bail!("Socket is already in use!"),
-            Err(err) => match err.kind() {
-                ErrorKind::ConnectionRefused => {}
-                err => bail!("Failed to handle the socket file: {}", err),
-            },
+    match check_daemon_status(socket_path)? {
+        DaemonStatus::NoSocketFile => {}
+        DaemonStatus::NotRunning => {
+            fs::remove_file(socket_path).context("Failed to remove the existing socket file")?
         }
-
-        fs::remove_file(socket_path).context("Failed to remove the existing socket file")?;
+        DaemonStatus::Running => bail!("Daemon is already running!"),
     }
 
     UnixListener::bind(&socket_path).context("Failed to create socket with the provided path")
@@ -32,7 +31,7 @@ pub fn create_socket(socket_path: &Path) -> Result<UnixListener> {
 
 pub fn serve_on_socket<A: DeserializeOwned, B: Serialize>(
     listener: UnixListener,
-    process: impl Fn(A) -> Processed<B> + Send + Sync + 'static,
+    process: impl Fn(A) -> Result<B, String> + Send + Sync + 'static,
 ) -> ! {
     let process = Arc::new(process);
 
@@ -45,10 +44,10 @@ pub fn serve_on_socket<A: DeserializeOwned, B: Serialize>(
             }
         };
 
-        if let Err(err) = client.set_nonblocking(true) {
-            error!("Failed to set client in non-blocking mode: {err}");
-            continue;
-        }
+        // if let Err(err) = client.set_nonblocking(true) {
+        //     error!("Failed to set client in non-blocking mode: {err}");
+        //     continue;
+        // }
 
         let process = Arc::clone(&process);
         std::thread::spawn(move || serve_client(client, process));
@@ -59,19 +58,21 @@ pub fn serve_on_socket<A: DeserializeOwned, B: Serialize>(
 
 fn serve_client<A: DeserializeOwned, B: Serialize>(
     mut client: UnixStream,
-    process: Arc<impl Fn(A) -> Processed<B>>,
+    process: Arc<impl Fn(A) -> Result<B, String>>,
 ) -> ! {
     loop {
         let mut message = String::new();
 
-        if let Err(err) = client.read_to_string(&mut message) {
-            error!("Failed to read from client: {err}");
-            short_sleep();
-            continue;
+        if let Err(err) = BufReader::new(&client).read_line(&mut message) {
+            error!(
+                "Failed to read message from the client (waiting before retrying): {:?}",
+                err
+            );
+            std::thread::sleep(Duration::from_secs(5));
         }
 
         if message.is_empty() {
-            short_sleep();
+            std::thread::sleep(Duration::from_millis(100));
             continue;
         }
 
@@ -96,7 +97,7 @@ fn serve_client<A: DeserializeOwned, B: Serialize>(
             id
         );
 
-        let res = match serde_json::to_string(&res) {
+        let mut res = match serde_json::to_string(&res) {
             Ok(res) => res,
             Err(err) => {
                 error!("Failed to stringify response for client: {err}");
@@ -105,8 +106,17 @@ fn serve_client<A: DeserializeOwned, B: Serialize>(
             }
         };
 
+        // Message separator
+        res.push('\n');
+
         if let Err(err) = client.write_all(res.as_bytes()) {
             error!("Failed to transmit response to client: {err}");
+            short_sleep();
+            continue;
+        }
+
+        if let Err(err) = client.flush() {
+            error!("Failed to flush the client's stream: {err}");
             short_sleep();
             continue;
         }
