@@ -1,12 +1,13 @@
 use std::{
-    io::{Read, Write},
+    fs,
+    io::{ErrorKind, Read, Write},
     os::unix::net::{UnixListener, UnixStream},
     path::Path,
     sync::Arc,
     time::Duration,
 };
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{error, info};
@@ -14,6 +15,18 @@ use crate::{error, info};
 use super::{Processed, Request, Response};
 
 pub fn create_socket(socket_path: &Path) -> Result<UnixListener> {
+    if socket_path.exists() {
+        match UnixStream::connect(socket_path) {
+            Ok(_) => bail!("Socket is already in use!"),
+            Err(err) => match err.kind() {
+                ErrorKind::ConnectionRefused => {}
+                err => bail!("Failed to handle the socket file: {}", err),
+            },
+        }
+
+        fs::remove_file(socket_path).context("Failed to remove the existing socket file")?;
+    }
+
     UnixListener::bind(&socket_path).context("Failed to create socket with the provided path")
 }
 
