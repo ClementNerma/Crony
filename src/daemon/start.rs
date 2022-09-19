@@ -1,6 +1,7 @@
 use std::{
     fs::{self, OpenOptions},
     io::{self, Write},
+    sync::{Arc, RwLock},
     time::Duration,
 };
 
@@ -8,7 +9,7 @@ use anyhow::{Context, Result};
 use daemonize_me::Daemon;
 
 use crate::{
-    daemon::server::daemon::process,
+    daemon::server::{daemon::process, State},
     datetime::get_now,
     engine::start_engine,
     error_anyhow, info,
@@ -53,7 +54,10 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
     let socket = create_socket(&d_paths.socket_file()).unwrap();
 
     info!("Launching a separate thread for the socket listener...");
-    std::thread::spawn(|| serve_on_socket(socket, process));
+    let state = Arc::new(RwLock::new(State::new()));
+    let state_server = Arc::clone(&state);
+
+    std::thread::spawn(|| serve_on_socket(socket, process, state_server));
 
     info!("Starting the engine...");
 

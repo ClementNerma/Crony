@@ -29,9 +29,10 @@ pub fn create_socket(socket_path: &Path) -> Result<UnixListener> {
     UnixListener::bind(&socket_path).context("Failed to create socket with the provided path")
 }
 
-pub fn serve_on_socket<A: DeserializeOwned, B: Serialize>(
+pub fn serve_on_socket<A: DeserializeOwned, B: Serialize, S: Send + Sync + 'static>(
     listener: UnixListener,
-    process: impl Fn(A) -> Result<B, String> + Send + Sync + 'static,
+    process: impl Fn(A, Arc<S>) -> Result<B, String> + Send + Sync + 'static,
+    state: Arc<S>,
 ) -> ! {
     let process = Arc::new(process);
 
@@ -50,15 +51,17 @@ pub fn serve_on_socket<A: DeserializeOwned, B: Serialize>(
         // }
 
         let process = Arc::clone(&process);
-        std::thread::spawn(move || serve_client(client, process));
+        let state = Arc::clone(&state);
+        std::thread::spawn(move || serve_client(client, process, state));
     }
 
     unreachable!()
 }
 
-fn serve_client<A: DeserializeOwned, B: Serialize>(
+fn serve_client<A: DeserializeOwned, B: Serialize, S>(
     mut client: UnixStream,
-    process: Arc<impl Fn(A) -> Result<B, String>>,
+    process: Arc<impl Fn(A, Arc<S>) -> Result<B, String>>,
+    state: Arc<S>,
 ) -> ! {
     loop {
         let mut message = String::new();
@@ -89,7 +92,7 @@ fn serve_client<A: DeserializeOwned, B: Serialize>(
 
         let res = Response {
             for_id: id,
-            result: process(content),
+            result: process(content, Arc::clone(&state)),
         };
 
         info!(

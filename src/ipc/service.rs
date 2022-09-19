@@ -3,15 +3,15 @@ use serde::{Deserialize, Serialize};
 
 #[macro_export]
 macro_rules! service {
-    ($service_name:ident { $(fn $fn_name:ident($fn_arg_name:ident: $fn_arg_type:tt) -> Result<$fn_ret_type:tt> $content:block)+ }) => {
+    ($service_name:ident ($state_type:ty) { $(fn $fn_name:ident(state, $fn_arg_name:ident: $fn_arg_type:ty) -> Result<$fn_ret_type:ty> $content:block)+ }) => {
+        type ___State = $state_type;
+
         pub mod $service_name {
+            use ::std::sync::Arc;
             use ::anyhow::Result;
             use ::serde::{Serialize, Deserialize};
-
-            use $crate::ipc::{
-                ServiceClient,
-                Processed
-            };
+            use $crate::ipc::{ServiceClient, Processed};
+            use super::___State as State;
 
             #[derive(Serialize, Deserialize)]
             #[allow(non_camel_case_types)]
@@ -26,7 +26,7 @@ macro_rules! service {
             }
 
             mod handlers {
-                $(pub(super) fn $fn_name($fn_arg_name: $fn_arg_type) -> super::Result<$fn_ret_type> $content)+
+                $(pub(super) fn $fn_name(#[allow(unused_variables)] state: super::Arc<super::State>, $fn_arg_name: $fn_arg_type) -> super::Result<$fn_ret_type> $content)+
             }
 
             pub mod senders {
@@ -45,9 +45,9 @@ macro_rules! service {
                 })+
             }
 
-            pub fn process(req: RequestContent) -> Result<ResponseContent, String> {
+            pub fn process(req: RequestContent, state: Arc<State>) -> Result<ResponseContent, String> {
                 match req {
-                    $(RequestContent::$fn_name { $fn_arg_name } => handlers::$fn_name($fn_arg_name).map(|value| ResponseContent::$fn_name(value)).map_err(|error| format!("{:?}", error))),+
+                    $(RequestContent::$fn_name { $fn_arg_name } => handlers::$fn_name(state, $fn_arg_name).map(|value| ResponseContent::$fn_name(value)).map_err(|error| format!("{:?}", error))),+
                 }
             }
 
