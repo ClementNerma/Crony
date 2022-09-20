@@ -1,24 +1,24 @@
-use std::sync::{Condvar, RwLock};
+use std::sync::Condvar;
 
 use crate::service;
 
 service!(
-    daemon (WrappedState) from (functions) {
+    daemon (functions) {
         fn hello() -> String;
-        fn reload_tasks(__: ()) -> ();
+        fn reload_tasks() -> ();
     }
 );
 
 mod functions {
     use std::sync::{Arc, RwLock};
 
-    use super::State;
+    pub type State = RwLock<super::State>;
 
-    pub fn hello(state: Arc<RwLock<State>>) -> String {
+    pub fn hello(_: Arc<State>) -> String {
         "Hello".to_string()
     }
 
-    pub fn reload_tasks(state: Arc<RwLock<State>>, __: ()) {
+    pub fn reload_tasks(state: Arc<State>) {
         let cvar = std::sync::Condvar::new();
         state.write().unwrap().must_reload_tasks = Some(cvar);
     }
@@ -35,5 +35,3 @@ impl State {
         }
     }
 }
-
-type WrappedState = RwLock<State>;

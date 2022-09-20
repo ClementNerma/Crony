@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[macro_export]
 macro_rules! service {
-    ($service_name:ident ($state_type:ident) from ($mod:ident) {
+    ($service_name:ident ($mod:ident) {
         $(fn $fn_name:ident($($fn_arg_name:ident: $fn_arg_type:ty)?) -> $fn_ret_type:ty;)+
     }) => {
         pub mod $service_name {
@@ -13,7 +13,7 @@ macro_rules! service {
             use ::anyhow::Result;
 
             use $crate::ipc::{ServiceClient};
-            use super::$state_type as State;
+            use super::$mod::{self as functions, State};
 
             #[derive(Serialize, Deserialize)]
             #[allow(non_camel_case_types)]
