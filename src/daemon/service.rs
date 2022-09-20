@@ -4,15 +4,13 @@ use crate::service;
 
 service!(
     daemon (WrappedState) {
-        fn hello(state, __: ()) -> Result<String> {
-            Ok("Hello".to_string())
+        fn hello(state, __: ()) -> String {
+            "Hello".to_string()
         }
 
-        fn reload_tasks(state, __: ()) -> Result<()> {
+        fn reload_tasks(state, __: ()) -> () {
             let cvar = std::sync::Condvar::new();
             state.write().unwrap().must_reload_tasks = Some(cvar);
-
-            Ok(())
         }
     }
 );

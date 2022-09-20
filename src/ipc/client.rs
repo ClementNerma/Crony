@@ -28,7 +28,7 @@ impl<A: Serialize, B: DeserializeOwned> SocketClient<A, B> {
         })
     }
 
-    pub fn send_unchecked(&mut self, req: A) -> Result<::std::result::Result<B, String>> {
+    pub fn send_unchecked(&mut self, req: A) -> Result<B> {
         let req = Request {
             id: rand::random(),
             content: req,

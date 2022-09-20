@@ -2,7 +2,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::ipc::{Processed, ServiceClient, SocketClient};
+use crate::ipc::{ServiceClient, SocketClient};
 
 use super::service::daemon::{Client, RequestContent as Req, ResponseContent as Res};
 
@@ -19,7 +19,7 @@ impl DaemonClient {
 }
 
 impl ServiceClient<Req, Res> for DaemonClient {
-    fn send_unchecked(&mut self, req: Req) -> Processed<Res> {
+    fn send_unchecked(&mut self, req: Req) -> Result<Res> {
         self.inner.send_unchecked(req)
     }
 }

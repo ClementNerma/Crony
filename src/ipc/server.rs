@@ -31,7 +31,7 @@ pub fn create_socket(socket_path: &Path) -> Result<UnixListener> {
 
 pub fn serve_on_socket<A: DeserializeOwned, B: Serialize, S: Send + Sync + 'static>(
     listener: UnixListener,
-    process: impl Fn(A, Arc<S>) -> Result<B, String> + Send + Sync + 'static,
+    process: impl Fn(A, Arc<S>) -> B + Send + Sync + 'static,
     state: Arc<S>,
 ) -> ! {
     let process = Arc::new(process);
@@ -60,7 +60,7 @@ pub fn serve_on_socket<A: DeserializeOwned, B: Serialize, S: Send + Sync + 'stat
 
 fn serve_client<A: DeserializeOwned, B: Serialize, S>(
     mut client: UnixStream,
-    process: Arc<impl Fn(A, Arc<S>) -> Result<B, String>>,
+    process: Arc<impl Fn(A, Arc<S>) -> B>,
     state: Arc<S>,
 ) -> ! {
     loop {

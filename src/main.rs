@@ -205,15 +205,10 @@ fn inner_main() -> Result<()> {
             let mut client = DaemonClient::connect(&socket_file)?;
             let res = client.hello(())?;
 
-            match res {
-                Ok(res) => {
-                    if res == "Hello" {
-                        success!("Daemon responses successfully to a test call.");
-                    } else {
-                        error!("Daemon responsed unsuccessfully to a test call.");
-                    }
-                }
-                Err(err) => error!("Daemon returned an error for test call: {err}"),
+            if res == "Hello" {
+                success!("Daemon responses successfully to a test call.");
+            } else {
+                error!("Daemon responsed unsuccessfully to a test call.");
             }
         }
     }
