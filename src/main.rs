@@ -203,7 +203,7 @@ fn inner_main() -> Result<()> {
             }
 
             let mut client = DaemonClient::connect(&socket_file)?;
-            let res = client.hello(())?;
+            let res = client.hello()?;
 
             if res == "Hello" {
                 success!("Daemon responses successfully to a test call.");

@@ -4,7 +4,7 @@ use crate::service;
 
 service!(
     daemon (WrappedState) from (functions) {
-        fn hello(__: ()) -> String;
+        fn hello() -> String;
         fn reload_tasks(__: ()) -> ();
     }
 );
@@ -14,7 +14,7 @@ mod functions {
 
     use super::State;
 
-    pub fn hello(state: Arc<RwLock<State>>, __: ()) -> String {
+    pub fn hello(state: Arc<RwLock<State>>) -> String {
         "Hello".to_string()
     }
 
