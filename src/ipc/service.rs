@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[macro_export]
 macro_rules! service {
-    ($service_name:ident ($state_type:ty) { $(fn $fn_name:ident(state, $fn_arg_name:ident: $fn_arg_type:ty) -> Result<$fn_ret_type:ty> $content:block)+ }) => {
+    ($service_name:ident ($state_type:ty) { $(fn $fn_name:ident($state_arg_name:ident, $fn_arg_name:ident: $fn_arg_type:ty) -> Result<$fn_ret_type:ty> $content:block)+ }) => {
         type ___State = $state_type;
 
         pub mod $service_name {
@@ -26,7 +26,7 @@ macro_rules! service {
             }
 
             mod handlers {
-                $(pub(super) fn $fn_name(#[allow(unused_variables)] state: super::Arc<super::State>, $fn_arg_name: $fn_arg_type) -> super::Result<$fn_ret_type> $content)+
+                $(pub(super) fn $fn_name(#[allow(unused_variables)] $state_arg_name: super::Arc<super::State>, $fn_arg_name: $fn_arg_type) -> super::Result<$fn_ret_type> $content)+
             }
 
             pub mod senders {

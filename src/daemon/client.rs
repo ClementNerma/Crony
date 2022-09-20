@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::ipc::{Processed, ServiceClient, SocketClient};
 
-use super::server::daemon::{Client, RequestContent as Req, ResponseContent as Res};
+use super::service::daemon::{Client, RequestContent as Req, ResponseContent as Res};
 
 pub struct DaemonClient {
     inner: SocketClient<Req, Res>,

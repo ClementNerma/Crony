@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use daemonize_me::Daemon;
 
 use crate::{
-    daemon::server::{daemon::process, State},
+    daemon::service::{daemon::process, State},
     datetime::get_now,
     engine::start_engine,
     error_anyhow, info,
