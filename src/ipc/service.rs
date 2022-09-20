@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 
 #[macro_export]
 macro_rules! service {
-    ($service_name:ident ($state_type:ty) { $(fn $fn_name:ident($state_arg_name:ident, $fn_arg_name:ident: $fn_arg_type:ty) -> $fn_ret_type:ty $content:block)+ }) => {
-        type ___State = $state_type;
-
+    ($service_name:ident ($state_type:ident) from ($mod:ident) {
+        $(fn $fn_name:ident($fn_arg_name:ident: $fn_arg_type:ty) -> $fn_ret_type:ty;)+
+    }) => {
         pub mod $service_name {
             use ::std::sync::Arc;
 
@@ -13,7 +13,7 @@ macro_rules! service {
             use ::anyhow::Result;
 
             use $crate::ipc::{ServiceClient};
-            use super::___State as State;
+            use super::$state_type as State;
 
             #[derive(Serialize, Deserialize)]
             #[allow(non_camel_case_types)]
@@ -28,7 +28,9 @@ macro_rules! service {
             }
 
             mod handlers {
-                $(pub(super) fn $fn_name(#[allow(unused_variables)] $state_arg_name: super::Arc<super::State>, $fn_arg_name: $fn_arg_type) -> $fn_ret_type $content)+
+                $(pub(super) fn $fn_name(#[allow(unused_variables)] state: super::Arc<super::State>, $fn_arg_name: $fn_arg_type) -> $fn_ret_type {
+                    super::super::$mod::$fn_name(state, $fn_arg_name)
+                })+
             }
 
             pub mod senders {
