@@ -29,7 +29,7 @@ macro_rules! service {
 
             mod handlers {
                 $(pub(super) fn $fn_name(#[allow(unused_variables)] state: super::Arc<super::State>$(, $fn_arg_name: $fn_arg_type)?) -> $fn_ret_type {
-                    super::super::$mod::$fn_name(state$(, $fn_arg_name)?)
+                    super::functions::$fn_name(state$(, $fn_arg_name)?)
                 })+
             }
 
