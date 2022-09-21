@@ -10,9 +10,10 @@ mod utils;
 
 pub use data::*;
 pub use engine::*;
+use utils::logging::PRINT_DEBUG_MESSAGES;
 pub use utils::*;
 
-use std::fs;
+use std::{fs, sync::atomic::Ordering};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
@@ -39,7 +40,13 @@ fn main() {
 }
 
 fn inner_main() -> Result<()> {
+    debug!("Entered inner main.");
+
     let cmd = Cmd::parse();
+
+    if cmd.verbose {
+        PRINT_DEBUG_MESSAGES.store(true, Ordering::SeqCst);
+    }
 
     let paths = construct_data_dir_paths(cmd.data_dir)?;
 
@@ -179,7 +186,7 @@ fn inner_main() -> Result<()> {
             let socket_file = &paths.daemon_socket_file;
 
             if is_daemon_running(socket_file)? {
-                info!("Asking the daemon to reload the tasks...");
+                debug!("Asking the daemon to reload the tasks...");
 
                 let mut client = DaemonClient::connect(socket_file)?;
                 client.reload_tasks()?;
@@ -210,7 +217,7 @@ fn inner_main() -> Result<()> {
             let socket_file = &paths.daemon_socket_file;
 
             if is_daemon_running(socket_file)? {
-                info!("Asking the daemon to reload the tasks...");
+                debug!("Asking the daemon to reload the tasks...");
 
                 let mut client = DaemonClient::connect(socket_file)?;
                 client.reload_tasks()?;
@@ -237,7 +244,7 @@ fn inner_main() -> Result<()> {
         }
 
         Action::DaemonStatus => {
-            info!("Checking daemon's status...");
+            debug!("Checking daemon's status...");
 
             let socket_file = paths.daemon_socket_file;
 
@@ -246,13 +253,13 @@ fn inner_main() -> Result<()> {
                 return Ok(());
             }
 
-            success!("Daemon is running, sending a test request...");
+            debug!("Daemon is running, sending a test request...");
 
             let mut client = DaemonClient::connect(&socket_file)?;
             let res = client.hello()?;
 
             if res == "Hello" {
-                success!("Daemon responsed successfully to a test request.");
+                success!("Daemon is running and responding to requests.");
             } else {
                 error!("Daemon responsed unsuccessfully to a test request.");
             }

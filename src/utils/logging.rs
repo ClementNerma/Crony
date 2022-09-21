@@ -1,3 +1,7 @@
+use std::sync::atomic::AtomicBool;
+
+pub static PRINT_DEBUG_MESSAGES: AtomicBool = AtomicBool::new(false);
+
 #[macro_export]
 macro_rules! _format {
     ($color: ident => $message: tt, $($params: tt)*) => {{
@@ -67,6 +71,19 @@ macro_rules! notice {
 
     ($message: tt) => {{
         notice!($message,)
+    }};
+}
+
+#[macro_export]
+macro_rules! debug {
+    ($message: tt, $($params: tt)*) => {{
+        if $crate::utils::logging::PRINT_DEBUG_MESSAGES.load(::std::sync::atomic::Ordering::Relaxed) {
+            println!("{}", $crate::_format!(bright_black => $message, $($params)*));
+        }
+    }};
+
+    ($message: tt) => {{
+        debug!($message,)
     }};
 }
 
