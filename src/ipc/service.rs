@@ -12,7 +12,7 @@ macro_rules! service {
             use ::serde::{Serialize, Deserialize};
             use ::anyhow::Result;
 
-            use $crate::ipc::{ServiceClient};
+            use $crate::ipc::ServiceClient;
             use super::$mod::{self as functions, State};
 
             #[derive(Serialize, Deserialize)]

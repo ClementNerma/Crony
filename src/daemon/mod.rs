@@ -3,10 +3,11 @@ mod cmd;
 mod service;
 mod start;
 
-pub use client::DaemonClient;
+pub use client::*;
 pub use cmd::*;
-pub use service::daemon::Client;
-pub use start::start_daemon;
+pub use service::daemon::{Client, RequestContent, ResponseContent};
+pub use service::*;
+pub use start::*;
 
 use std::{io::ErrorKind, os::unix::net::UnixStream, path::Path};
 
