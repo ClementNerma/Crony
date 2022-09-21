@@ -19,19 +19,19 @@ You can find the list of changes in the [releases page](https://github.com/Cleme
 To start Crony:
 
 ```shell
-crony daemon-start
+crony start
 ```
 
 To check the daemon's status at anytime:
 
 ```shell
-crony daemon-status
+crony status
 ```
 
 To stop the daemon:
 
 ```shell
-crony daemon-stop
+crony stop
 ```
 
 Note that the daemon will wait until all tasks have properly exited before stopping itself. This ensures that no task is interrupted in the middle of its process.

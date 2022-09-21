@@ -35,13 +35,13 @@ pub enum Action {
     Run(RunArgs),
 
     #[clap(about = "Start the daemon")]
-    DaemonStart(DaemonStartArgs),
+    Start(DaemonStartArgs),
 
     #[clap(about = "Check the daemon's status")]
-    DaemonStatus,
+    Status,
 
     #[clap(about = "Stop the daemon")]
-    DaemonStop,
+    Stop,
 }
 
 #[derive(Args)]

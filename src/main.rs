@@ -239,11 +239,11 @@ fn inner_main() -> Result<()> {
             runner(task, &paths.task_paths(&task.name), use_log_files)?;
         }
 
-        Action::DaemonStart(args) => {
+        Action::Start(args) => {
             start_daemon(&paths, &args)?;
         }
 
-        Action::DaemonStatus => {
+        Action::Status => {
             debug!("Checking daemon's status...");
 
             let socket_file = paths.daemon_socket_file;
@@ -265,7 +265,7 @@ fn inner_main() -> Result<()> {
             }
         }
 
-        Action::DaemonStop => {
+        Action::Stop => {
             info!("Asking the daemon to stop...");
 
             let mut client = DaemonClient::connect(&paths.daemon_socket_file)?;
