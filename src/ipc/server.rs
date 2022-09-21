@@ -7,7 +7,7 @@ use std::{
 
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{error, info};
+use crate::error;
 
 use super::{Request, Response};
 
@@ -70,17 +70,17 @@ fn serve_client<A: DeserializeOwned, B: Serialize, S>(
             }
         };
 
-        info!("Treating message from client (message ID = {})...", id);
+        // info!("Treating message from client (message ID = {})...", id);
 
         let res = Response {
             for_id: id,
             result: process(content, Arc::clone(&state)),
         };
 
-        info!(
-            "Finished treating message from client (message ID = {}).",
-            id
-        );
+        // info!(
+        //     "Finished treating message from client (message ID = {}).",
+        //     id
+        // );
 
         let mut res = match serde_json::to_string(&res) {
             Ok(res) => res,
