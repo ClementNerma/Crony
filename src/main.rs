@@ -145,7 +145,16 @@ fn inner_main() -> Result<()> {
                 )
             }
 
-            // TODO: ask the daemon to reload
+            let socket_file = &paths.daemon_paths().socket_file();
+
+            if is_daemon_running(socket_file)? {
+                info!("Asking the daemon to reload the tasks...");
+
+                let mut client = DaemonClient::connect(socket_file)?;
+                client.reload_tasks()?;
+
+                success!("Daemon successfully reloaded the tasks!");
+            }
         }
 
         Action::Unregister(UnregisterArgs { name }) => {
@@ -165,7 +174,16 @@ fn inner_main() -> Result<()> {
 
             success!("Successfully removed task {}.", name.bright_yellow());
 
-            // TODO: ask the daemon to reload
+            let socket_file = &paths.daemon_paths().socket_file();
+
+            if is_daemon_running(socket_file)? {
+                info!("Asking the daemon to reload the tasks...");
+
+                let mut client = DaemonClient::connect(socket_file)?;
+                client.reload_tasks()?;
+
+                success!("Daemon successfully reloaded the tasks!");
+            }
         }
 
         Action::Run(RunArgs {
