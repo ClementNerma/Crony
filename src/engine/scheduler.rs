@@ -28,7 +28,7 @@ pub fn run_tasks(
         .map(|task| {
             (
                 task.name.clone(),
-                get_upcoming_moment(now, &task.run_at).unwrap(),
+                get_upcoming_moment(now, &task.at).unwrap(),
             )
         })
         .collect::<HashMap<_, _>>();
@@ -91,7 +91,7 @@ pub fn run_tasks(
 
             let mut queue = queue.write().unwrap();
 
-            let planned = get_new_upcoming_moment(get_now(), &task.run_at, planned_for).unwrap();
+            let planned = get_new_upcoming_moment(get_now(), &task.at, planned_for).unwrap();
 
             queue.insert(task.name.clone(), planned);
         });

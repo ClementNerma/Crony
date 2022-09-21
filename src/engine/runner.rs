@@ -14,6 +14,8 @@ use crate::{
 };
 use anyhow::{bail, Context, Result};
 
+pub static DEFAULT_SHELL_CMD: &str = "/bin/sh -c";
+
 pub fn runner(
     task: &Task,
     paths: &TaskPaths,
@@ -32,7 +34,12 @@ pub fn runner(
         human_datetime(started_at).bright_magenta()
     );
 
-    let mut shell_cmd_parts = task.shell.split(' ');
+    let shell_cmd = task
+        .shell
+        .clone()
+        .unwrap_or_else(|| DEFAULT_SHELL_CMD.to_string());
+
+    let mut shell_cmd_parts = shell_cmd.split(' ');
 
     let mut cmd = Command::new(shell_cmd_parts.next().unwrap());
 

@@ -16,8 +16,8 @@ pub type Tasks = BTreeMap<String, Task>;
 pub struct Task {
     pub id: u64,
     pub name: String,
-    pub run_at: At,
-    pub shell: String,
+    pub at: At,
+    pub shell: Option<String>,
     pub cmd: String,
 }
 

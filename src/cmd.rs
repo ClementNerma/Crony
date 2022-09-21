@@ -52,7 +52,7 @@ pub struct RegisterArgs {
     pub at: String,
 
     #[clap(long, help = "The shell to use")]
-    pub using: String,
+    pub using: Option<String>,
 
     #[clap(long, help = "Override any task with the provided name")]
     pub force_override: bool,

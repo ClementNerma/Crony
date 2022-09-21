@@ -42,13 +42,19 @@ This directory is portable, meaning that copying it on another machine will auto
 Tasks can be registered through the `register` subcommand:
 
 ```shell
-crony register <task_name> --run <command with arguments> --at <repetition pattern> --using <shell command>
+crony register <task_name> --run <command with arguments> --at <repetition pattern> [--using <shell command>]
 ```
 
 Here is how we register a task displaying `Hello world` every minutes:
 
 ```shell
-crony register hello-world --run "echo 'Hello world'" --at "m=*" --using /bin/sh
+crony register hello-world --run "echo 'Hello world'" --at "m=*"
+```
+
+To provide use a custom shell (default is `/bin/sh -c`):
+
+```shell
+crony register hello-world --run "echo 'Hello world'" --at "m=*" --using "/bin/zsh -c"
 ```
 
 If we want to remove the task:

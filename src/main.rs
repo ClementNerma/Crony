@@ -77,9 +77,12 @@ fn inner_main() -> Result<()> {
                     "*".bright_blue(),
                     task.name.bright_yellow(),
                     last_run,
-                    task.shell.bright_magenta(),
+                    match &task.shell {
+                        Some(shell) => shell.bright_magenta(),
+                        None => "-".bright_black().italic(),
+                    },
                     task.cmd.bright_cyan(),
-                    task.run_at.encode().bright_black(),
+                    task.at.encode().bright_black(),
                 ));
             }
 
@@ -121,17 +124,17 @@ fn inner_main() -> Result<()> {
                 bail!("The provided name is invalid, only letters, digits, dashes and underscores are allowed.");
             }
 
-            let run_at = At::parse(&at)?;
+            let at = At::parse(&at)?;
 
             let task = Task {
                 id: random(),
                 name: name.clone(),
-                run_at,
+                at,
                 cmd: run,
                 shell: using,
             };
 
-            let next = task.run_at.next_occurrence().context(
+            let next = task.at.next_occurrence().context(
                 "Failed to find a valid next occurrence for the provided repetition pattern",
             )?;
 
