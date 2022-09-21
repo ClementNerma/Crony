@@ -5,6 +5,7 @@ use clap::{Args, Parser, Subcommand};
 use crate::daemon::DaemonStartArgs;
 
 #[derive(Parser)]
+#[clap(author, version, help = "Replacement program for 'cron' and 'crontab'")]
 pub struct Cmd {
     #[clap(short, long, help = "Path to the data directory")]
     pub data_dir: Option<PathBuf>,
