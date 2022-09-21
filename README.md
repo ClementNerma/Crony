@@ -12,6 +12,8 @@ Crony is a replacement tool for the famous `cron` as well as `crontab`. It provi
 * Direct execution of a task to test if it's working
 * Portable tasks
 
+You can find the list of changes in the [releases page](https://github.com/ClementNerma/Crony/releases/latest) or directly in the [Changelog](CHANGELOG.md).
+
 ## Using the daemon
 
 To start Crony:
