@@ -7,7 +7,7 @@ use std::{
 
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::error;
+use crate::{error, sleep::sleep_ms};
 
 use super::{Request, Response};
 
@@ -53,11 +53,11 @@ fn serve_client<A: DeserializeOwned, B: Serialize, S>(
                 "Failed to read message from the client (waiting before retrying): {:?}",
                 err
             );
-            std::thread::sleep(Duration::from_secs(5));
+            sleep_ms(5000);
         }
 
         if message.is_empty() {
-            std::thread::sleep(Duration::from_millis(100));
+            sleep_ms(100);
             continue;
         }
 

@@ -3,7 +3,6 @@ use std::{
     os::unix::net::UnixListener,
     path::PathBuf,
     sync::{Arc, Mutex, RwLock},
-    time::Duration,
 };
 
 use anyhow::{bail, Context, Result};
@@ -22,6 +21,7 @@ use crate::{
     ipc::serve_on_socket,
     paths::Paths,
     save::read_tasks,
+    sleep::sleep_ms,
     success, RunningTasksInterface,
 };
 
@@ -147,7 +147,7 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
                     last_running = len;
                 }
 
-                std::thread::sleep(Duration::from_millis(100));
+                sleep_ms(100);
             }
 
             info!("[Exiting] Now exiting.");
@@ -165,7 +165,7 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
                 error_anyhow!(
                     err.context("Failed to load tasks, waiting for 5 seconds before retrying...")
                 );
-                std::thread::sleep(Duration::from_secs(5));
+                sleep_ms(5000);
                 continue;
             }
         };
@@ -199,7 +199,7 @@ fn fork_exit(_parent_pid: i32, child_pid: i32) -> ! {
     let socket_path = guard.as_ref().unwrap();
 
     while !socket_path.exists() {
-        std::thread::sleep(Duration::from_millis(50));
+        sleep_ms(50);
     }
 
     let mut client = DaemonClient::connect(socket_path).unwrap();

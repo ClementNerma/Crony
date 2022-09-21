@@ -12,7 +12,7 @@ pub use data::*;
 pub use engine::*;
 pub use utils::*;
 
-use std::{fs, time::Duration};
+use std::fs;
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
@@ -27,6 +27,7 @@ use crate::{
     datetime::human_datetime,
     engine::runner,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
+    sleep::sleep_ms,
     task::Task,
 };
 
@@ -241,7 +242,7 @@ fn inner_main() -> Result<()> {
                     last_running = running;
                 }
 
-                std::thread::sleep(Duration::from_millis(100));
+                sleep_ms(100);
             }
 
             success!("Daemon was successfully stopped!");

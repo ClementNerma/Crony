@@ -6,11 +6,12 @@ mod upcoming;
 pub use cmd::*;
 pub use runner::runner;
 
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use crate::{
     error, error_anyhow,
     paths::Paths,
+    sleep::sleep_ms,
     task::{Task, Tasks},
 };
 
@@ -39,7 +40,7 @@ pub fn start_engine(
             if let Err(err) = result {
                 error_anyhow!(err.context("Runner failed to run (from Scheduler)"));
                 error!("Now sleeping for 5 seconds...");
-                std::thread::sleep(Duration::from_secs(5));
+                sleep_ms(5000);
             }
         },
         stop_on,

@@ -14,10 +14,9 @@ service!(
 );
 
 mod functions {
-    use std::{
-        sync::{Arc, RwLock},
-        time::Duration,
-    };
+    use std::sync::{Arc, RwLock};
+
+    use crate::sleep::sleep_ms;
 
     pub type State = RwLock<super::State>;
 
@@ -29,7 +28,7 @@ mod functions {
         state.write().unwrap().exit = true;
 
         while state.read().unwrap().exit {
-            std::thread::sleep(Duration::from_millis(20));
+            sleep_ms(20);
         }
     }
 
@@ -37,7 +36,7 @@ mod functions {
         state.write().unwrap().must_reload_tasks = true;
 
         while state.read().unwrap().must_reload_tasks {
-            std::thread::sleep(Duration::from_millis(20));
+            sleep_ms(20);
         }
     }
 
