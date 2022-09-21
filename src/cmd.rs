@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
 
-use crate::{daemon::DaemonStartArgs, engine::EngineArgs};
+use crate::daemon::DaemonStartArgs;
 
 #[derive(Parser)]
 pub struct Cmd {
@@ -26,9 +26,6 @@ pub enum Action {
 
     #[clap(about = "Run a task immediatly")]
     Run(RunArgs),
-
-    #[clap(about = "Run the engine in foreground")]
-    Foreground(EngineArgs),
 
     #[clap(about = "Start the daemon")]
     DaemonStart(DaemonStartArgs),

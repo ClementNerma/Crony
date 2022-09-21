@@ -25,7 +25,7 @@ use crate::{
     cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, UnregisterArgs},
     daemon::{is_daemon_running, start_daemon, Client, DaemonClient},
     datetime::human_datetime,
-    engine::{runner, start_engine},
+    engine::runner,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
     task::Task,
 };
@@ -194,11 +194,6 @@ fn inner_main() -> Result<()> {
                 .with_context(|| format!("Task '{}' does not exist.", name.bright_yellow()))?;
 
             runner(task, &paths.task_paths(&task.name), use_log_files)?;
-        }
-
-        Action::Foreground(args) => {
-            info!("Starting the engine (foreground)...");
-            start_engine(&paths, &read_tasks(&paths)?, &args, todo!(), || false);
         }
 
         Action::DaemonStart(args) => {
