@@ -1,18 +1,20 @@
 use std::{
     fs::{self, OpenOptions},
-    io::{self, Write},
     os::unix::net::UnixListener,
-    sync::{Arc, RwLock},
+    path::PathBuf,
+    sync::{Arc, Mutex, RwLock},
     time::Duration,
 };
 
 use anyhow::{bail, Context, Result};
 use daemonize_me::Daemon;
+use once_cell::sync::Lazy;
 
 use crate::{
     daemon::{
         is_daemon_running,
         service::{daemon::process, RunningTask, State},
+        Client, DaemonClient, DaemonStartArgs,
     },
     datetime::get_now,
     engine::start_engine,
@@ -23,7 +25,7 @@ use crate::{
     success, RunningTasksInterface,
 };
 
-use super::DaemonStartArgs;
+static SOCKET_FILE_PATH: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
 
 pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
     if !paths.daemon_dir.exists() {
@@ -33,6 +35,11 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
 
     if is_daemon_running(&paths.daemon_socket_file)? {
         bail!("Daemon is already running.");
+    }
+
+    if paths.daemon_socket_file.exists() {
+        fs::remove_file(&paths.daemon_socket_file)
+            .context("Failed to remove the existing socket file")?;
     }
 
     let stdout_file = OpenOptions::new()
@@ -47,8 +54,9 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
         .open(&paths.daemon_stderr_logfile)
         .context("Failed to open the daemon's STDOUT log file")?;
 
+    *SOCKET_FILE_PATH.lock().unwrap() = Some(paths.daemon_socket_file.clone());
+
     Daemon::new()
-        // .pid_file(d_paths.pid_file(), Some(false))
         .stdout(stdout_file)
         .stderr(stderr_file)
         .setup_post_fork_parent_hook(fork_exit)
@@ -69,15 +77,6 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
 fn daemon_core(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
     info!("Successfully started the daemon on {}", get_now());
     info!("Setting up the socket...");
-
-    if is_daemon_running(&paths.daemon_socket_file)? {
-        bail!("Daemon is already running!");
-    }
-
-    if paths.daemon_socket_file.exists() {
-        fs::remove_file(&paths.daemon_socket_file)
-            .context("Failed to remove the existing socket file")?;
-    }
 
     let socket = UnixListener::bind(&paths.daemon_socket_file)
         .context("Failed to create socket with the provided path")?;
@@ -194,15 +193,22 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
 }
 
 fn fork_exit(_parent_pid: i32, child_pid: i32) -> ! {
+    info!("Started the daemon, waiting for response...");
+
+    let guard = SOCKET_FILE_PATH.lock().unwrap();
+    let socket_path = guard.as_ref().unwrap();
+
+    while !socket_path.exists() {
+        std::thread::sleep(Duration::from_millis(50));
+    }
+
+    let mut client = DaemonClient::connect(socket_path).unwrap();
+    client.hello().unwrap();
+
     success!(
         "Successfully setup daemon with PID {}!",
         child_pid.to_string().bright_yellow()
     );
-
-    io::stdout()
-        .flush()
-        .context("Failed to flush STDOUT")
-        .unwrap();
 
     std::process::exit(0);
 }
