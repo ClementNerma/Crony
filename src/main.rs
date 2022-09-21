@@ -139,13 +139,15 @@ fn inner_main() -> Result<()> {
 
                 let identical = simili == task;
 
-                if !force_override && (identical ^ ignore_identical) {
+                if identical && ignore_identical {
+                    return Ok(());
+                }
+
+                if !force_override {
                     bail!("A task with this name already exists!");
                 }
 
-                if !identical {
-                    warn!("WARNING: Going to override the existing task!");
-                }
+                warn!("WARNING: Going to override the existing task!");
 
                 fs::rename(
                     paths.task_paths(&name).dir(),
