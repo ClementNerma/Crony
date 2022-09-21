@@ -1,4 +1,3 @@
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 #[macro_export]
@@ -10,9 +9,10 @@ macro_rules! service {
             use ::std::sync::Arc;
 
             use ::serde::{Serialize, Deserialize};
-            use ::anyhow::Result;
+            use ::anyhow::{bail, Result};
 
-            use $crate::ipc::ServiceClient;
+            use $crate::ipc::SocketClient;
+
             use super::$mod::{self as functions, State};
 
             #[derive(Serialize, Deserialize)]
@@ -33,33 +33,24 @@ macro_rules! service {
                 })+
             }
 
-            pub mod senders {
-                use ::anyhow::{bail, Result};
-                use super::{ServiceClient, RequestContent, ResponseContent};
-
-                $(pub fn $fn_name(client: &mut impl ServiceClient<RequestContent, ResponseContent>$(, $fn_arg_name: $fn_arg_type)?) -> Result<$crate::service!(@ty $($fn_ret_type)?)> {
-                    match client.send_unchecked(RequestContent::$fn_name $({ $fn_arg_name })?)? {
-                        ResponseContent::$fn_name ($crate::service!(@pat $($fn_ret_type)? => output)) => Ok($crate::service!(@expr $($fn_ret_type)? => output)),
-
-                        #[allow(unreachable_patterns)]
-                        _ => bail!("Invalid unchecked response variant returned by service client"),
-                    }
-                })+
-            }
-
             pub fn process(req: RequestContent, state: Arc<State>) -> ResponseContent {
                 match req {
                     $(RequestContent::$fn_name $({ $fn_arg_name })? => ResponseContent::$fn_name(handlers::$fn_name(state, $($fn_arg_name)?))),+
                 }
             }
 
-            pub trait Client {
-                type Client: ServiceClient<RequestContent, ResponseContent>;
+            pub struct Client {
+                pub inner: SocketClient<RequestContent, ResponseContent>
+            }
 
-                fn retrieve_client(&mut self) -> &mut Self::Client;
+            impl Client {
+                $(pub fn $fn_name(&mut self$(, $fn_arg_name: $fn_arg_type)?) -> Result<$crate::service!(@ty $($fn_ret_type)?)> {
+                    match self.inner.send_unchecked(RequestContent::$fn_name $({ $fn_arg_name })?)? {
+                        ResponseContent::$fn_name ($crate::service!(@pat $($fn_ret_type)? => output)) => Ok($crate::service!(@expr $($fn_ret_type)? => output)),
 
-                $(fn $fn_name(&mut self $(, $fn_arg_name: $fn_arg_type)?) -> Result<$crate::service!(@ty $($fn_ret_type)?)> {
-                    senders::$fn_name(self.retrieve_client() $(, $fn_arg_name)?)
+                        #[allow(unreachable_patterns)]
+                        _ => bail!("Invalid unchecked response variant returned by service client"),
+                    }
                 })+
             }
         }
@@ -85,8 +76,4 @@ pub struct Request<T> {
 pub struct Response<T> {
     pub for_id: u64,
     pub result: T,
-}
-
-pub trait ServiceClient<Req, Res> {
-    fn send_unchecked(&mut self, req: Req) -> Result<Res>;
 }

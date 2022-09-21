@@ -13,7 +13,7 @@ use crate::{
     daemon::{
         is_daemon_running,
         service::{daemon::process, RunningTask, State},
-        Client, DaemonClient, DaemonStartArgs,
+        DaemonClient, DaemonStartArgs,
     },
     datetime::get_now,
     engine::start_engine,

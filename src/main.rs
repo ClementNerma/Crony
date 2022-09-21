@@ -23,7 +23,7 @@ use tabular::{row, Table};
 use crate::{
     at::At,
     cmd::{Action, Cmd, RegisterArgs, RunArgs, UnregisterArgs},
-    daemon::{is_daemon_running, start_daemon, Client, DaemonClient},
+    daemon::{is_daemon_running, start_daemon, DaemonClient},
     datetime::human_datetime,
     engine::runner,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
