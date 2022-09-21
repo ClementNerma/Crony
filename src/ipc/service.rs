@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[macro_export]
 macro_rules! service {
     ($service_name:ident ($mod:ident) {
-        $(fn $fn_name:ident($($fn_arg_name:ident: $fn_arg_type:ty)?) -> $fn_ret_type:ty;)+
+        $(fn $fn_name:ident($($fn_arg_name:ident: $fn_arg_type:ty)?)$( -> $fn_ret_type:ty)?;)+
     }) => {
         pub mod $service_name {
             use ::std::sync::Arc;
@@ -24,11 +24,11 @@ macro_rules! service {
             #[derive(Serialize, Deserialize)]
             #[allow(non_camel_case_types)]
             pub enum ResponseContent {
-                $($fn_name($fn_ret_type)),+
+                $($fn_name($crate::service!(@ty $($fn_ret_type)?))),+
             }
 
             mod handlers {
-                $(pub(super) fn $fn_name(#[allow(unused_variables)] state: super::Arc<super::State>$(, $fn_arg_name: $fn_arg_type)?) -> $fn_ret_type {
+                $(pub(super) fn $fn_name(#[allow(unused_variables)] state: super::Arc<super::State>$(, $fn_arg_name: $fn_arg_type)?)$( -> $fn_ret_type)? {
                     super::functions::$fn_name(state$(, $fn_arg_name)?)
                 })+
             }
@@ -37,9 +37,9 @@ macro_rules! service {
                 use ::anyhow::{bail, Result};
                 use super::{ServiceClient, RequestContent, ResponseContent};
 
-                $(pub fn $fn_name(client: &mut impl ServiceClient<RequestContent, ResponseContent>$(, $fn_arg_name: $fn_arg_type)?) -> Result<$fn_ret_type> {
+                $(pub fn $fn_name(client: &mut impl ServiceClient<RequestContent, ResponseContent>$(, $fn_arg_name: $fn_arg_type)?) -> Result<$crate::service!(@ty $($fn_ret_type)?)> {
                     match client.send_unchecked(RequestContent::$fn_name $({ $fn_arg_name })?)? {
-                        ResponseContent::$fn_name(output) => Ok(output),
+                        ResponseContent::$fn_name ($crate::service!(@pat $($fn_ret_type)? => output)) => Ok($crate::service!(@expr $($fn_ret_type)? => output)),
 
                         #[allow(unreachable_patterns)]
                         _ => bail!("Invalid unchecked response variant returned by service client"),
@@ -58,12 +58,21 @@ macro_rules! service {
 
                 fn retrieve_client(&mut self) -> &mut Self::Client;
 
-                $(fn $fn_name(&mut self $(, $fn_arg_name: $fn_arg_type)?) -> Result<$fn_ret_type> {
+                $(fn $fn_name(&mut self $(, $fn_arg_name: $fn_arg_type)?) -> Result<$crate::service!(@ty $($fn_ret_type)?)> {
                     senders::$fn_name(self.retrieve_client() $(, $fn_arg_name)?)
                 })+
             }
         }
     };
+
+    (@ty $type:ty) => { $type };
+    (@ty) => { () };
+
+    (@pat $type:ty => $pat:pat) => { $pat };
+    (@pat => $pat:pat) => { () };
+
+    (@expr $type:ty => $expr:expr) => { $expr };
+    (@expr => $expr:expr) => { () };
 }
 
 #[derive(Serialize, Deserialize)]
