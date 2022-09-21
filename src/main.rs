@@ -115,14 +115,37 @@ fn inner_main() -> Result<()> {
             at,
             using,
             run,
+            force_override,
+            ignore_identical,
             silent,
         }) => {
             if !Task::is_valid_name(&name) {
                 bail!("The provided name is invalid, only letters, digits, dashes and underscores are allowed.");
             }
 
-            if tasks.contains_key(&name) && !silent {
-                warn!("WARNING: Going to override the existing task!");
+            let run_at = At::parse(&at)?;
+
+            let task = Task {
+                id: random(),
+                name: name.clone(),
+                run_at,
+                cmd: run,
+                shell: using,
+            };
+
+            if let Some(existing) = tasks.get(&name) {
+                let mut simili = existing.clone();
+                simili.id = task.id;
+
+                let identical = simili == task;
+
+                if !force_override && (identical ^ ignore_identical) {
+                    bail!("A task with this name already exists!");
+                }
+
+                if !identical {
+                    warn!("WARNING: Going to override the existing task!");
+                }
 
                 fs::rename(
                     paths.task_paths(&name).dir(),
@@ -134,18 +157,7 @@ fn inner_main() -> Result<()> {
             fs::create_dir(paths.task_paths(&name).dir())
                 .context("Failed to create the task's directory")?;
 
-            let run_at = At::parse(&at)?;
-
-            tasks.insert(
-                name.clone(),
-                Task {
-                    id: random(),
-                    name: name.clone(),
-                    run_at,
-                    cmd: run,
-                    shell: using,
-                },
-            );
+            tasks.insert(name.clone(), task);
 
             write_tasks(&paths, &tasks)?;
 

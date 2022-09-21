@@ -25,7 +25,7 @@ static AT_STR_PARSER: Lazy<Regex> = Lazy::new(|| {
     .unwrap()
 });
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct At {
     pub hours: Occurrences,
     pub minutes: Occurrences,

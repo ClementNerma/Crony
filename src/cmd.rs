@@ -54,6 +54,15 @@ pub struct RegisterArgs {
     #[clap(long, help = "The shell to use")]
     pub using: String,
 
+    #[clap(long, help = "Override any task with the provided name")]
+    pub force_override: bool,
+
+    #[clap(
+        long,
+        help = "Do nothing if a task with the same name and parameters already exist"
+    )]
+    pub ignore_identical: bool,
+
     #[clap(long, help = "Don't display messages outside of errors")]
     pub silent: bool,
 }

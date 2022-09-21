@@ -12,7 +12,7 @@ static NAME_VALIDATOR: Lazy<Regex> =
 
 pub type Tasks = BTreeMap<String, Task>;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Task {
     pub id: u64,
     pub name: String,
