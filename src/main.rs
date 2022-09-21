@@ -61,7 +61,7 @@ fn inner_main() -> Result<()> {
                 let history = read_history_if_exists(&paths.task_paths(&task.name))?;
 
                 let last_run = match history.find_last_for(task.id) {
-                    None => "Never run".bright_black().italic(),
+                    None => "Never run".bright_black(),
                     Some(entry) => {
                         let time = human_datetime(entry.started_at);
 
@@ -79,7 +79,7 @@ fn inner_main() -> Result<()> {
                     last_run,
                     match &task.shell {
                         Some(shell) => shell.bright_magenta(),
-                        None => "-".bright_black().italic(),
+                        None => "-".bright_black(),
                     },
                     task.cmd.bright_cyan(),
                     task.at.encode().bright_black(),
