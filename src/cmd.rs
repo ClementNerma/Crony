@@ -46,7 +46,7 @@ pub struct RegisterArgs {
     pub name: String,
 
     #[clap(short, long, help = "The command to run")]
-    pub cmd: String,
+    pub run: String,
 
     #[clap(long, help = "Times to run at (pattern like 'D=10,20 h=*")]
     pub at: String,

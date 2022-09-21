@@ -113,8 +113,8 @@ fn inner_main() -> Result<()> {
         Action::Register(RegisterArgs {
             name,
             at,
-            using: shell,
-            cmd,
+            using,
+            run,
             silent,
         }) => {
             if !Task::is_valid_name(&name) {
@@ -142,8 +142,8 @@ fn inner_main() -> Result<()> {
                     id: random(),
                     name: name.clone(),
                     run_at,
-                    cmd,
-                    shell,
+                    cmd: run,
+                    shell: using,
                 },
             );
 
