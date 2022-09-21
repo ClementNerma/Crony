@@ -55,7 +55,7 @@ fn inner_main() -> Result<()> {
             info!("Found {} tasks:", tasks.len().to_string().bright_yellow());
             info!("");
 
-            let mut table = Table::new("{:>} {:<} {:<} {:<} {:<} {:<} {:<}");
+            let mut table = Table::new("{:>} {:<} {:<} {:<} {:<} {:<}");
 
             for task in tasks.values() {
                 let history = read_history_if_exists(&paths.task_paths(&task.name))?;
@@ -73,15 +73,9 @@ fn inner_main() -> Result<()> {
                     }
                 };
 
-                let display_name = match &task.display_name {
-                    Some(display_name) => display_name.bright_cyan(),
-                    None => "".white(),
-                };
-
                 table.add_row(row!(
                     "*".bright_blue(),
                     task.name.bright_yellow(),
-                    display_name,
                     last_run,
                     task.shell.bright_magenta(),
                     task.cmd.bright_cyan(),
@@ -118,10 +112,9 @@ fn inner_main() -> Result<()> {
 
         Action::Register(RegisterArgs {
             name,
-            run_at,
-            shell,
+            at,
+            using: shell,
             cmd,
-            display_name,
             silent,
         }) => {
             if !Task::is_valid_name(&name) {
@@ -141,14 +134,13 @@ fn inner_main() -> Result<()> {
             fs::create_dir(paths.task_paths(&name).dir())
                 .context("Failed to create the task's directory")?;
 
-            let run_at = At::parse(&run_at)?;
+            let run_at = At::parse(&at)?;
 
             tasks.insert(
                 name.clone(),
                 Task {
                     id: random(),
                     name: name.clone(),
-                    display_name: display_name.clone(),
                     run_at,
                     cmd,
                     shell,
@@ -158,15 +150,7 @@ fn inner_main() -> Result<()> {
             write_tasks(&paths, &tasks)?;
 
             if !silent {
-                success!(
-                    "Successfully registered task {}{}.",
-                    name.bright_yellow(),
-                    if let Some(dp) = display_name {
-                        format!("({})", dp.bright_cyan())
-                    } else {
-                        String::new()
-                    }
-                )
+                success!("Successfully registered task {}.", name.bright_yellow(),)
             }
 
             let socket_file = &paths.daemon_socket_file;

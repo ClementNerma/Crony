@@ -45,17 +45,14 @@ pub struct RegisterArgs {
     #[clap(help = "Name of the task")]
     pub name: String,
 
-    #[clap(help = "The command to run")]
+    #[clap(short, long, help = "The command to run")]
     pub cmd: String,
 
-    #[clap(help = "Times to run at (pattern like 'D=10,20 h=*")]
-    pub run_at: String,
+    #[clap(long, help = "Times to run at (pattern like 'D=10,20 h=*")]
+    pub at: String,
 
-    #[clap(short, long, help = "The shell to use")]
-    pub shell: String,
-
-    #[clap(short, long, help = "Display name of the task")]
-    pub display_name: Option<String>,
+    #[clap(long, help = "The shell to use")]
+    pub using: String,
 
     #[clap(long, help = "Don't display messages outside of errors")]
     pub silent: bool,
