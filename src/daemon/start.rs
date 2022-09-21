@@ -26,22 +26,21 @@ use crate::{
 use super::DaemonStartArgs;
 
 pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
-    let d_paths = paths.daemon_paths();
-
-    if !d_paths.dir().exists() {
-        fs::create_dir(d_paths.dir()).context("Failed to create the daemon's data directory")?;
+    if !paths.daemon_dir.exists() {
+        fs::create_dir(&paths.daemon_dir)
+            .context("Failed to create the daemon's data directory")?;
     }
 
     let stdout_file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(d_paths.stdout_log_file())
+        .open(&paths.daemon_stdout_logfile)
         .context("Failed to open the daemon's STDOUT log file")?;
 
     let stderr_file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(d_paths.stderr_log_file())
+        .open(&paths.daemon_stderr_logfile)
         .context("Failed to open the daemon's STDOUT log file")?;
 
     Daemon::new()
@@ -67,17 +66,16 @@ fn daemon_core(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
     info!("Successfully started the daemon on {}", get_now());
     info!("Setting up the socket...");
 
-    let socket_path = &paths.daemon_paths().socket_file();
-
-    if is_daemon_running(socket_path)? {
+    if is_daemon_running(&paths.daemon_socket_file)? {
         bail!("Daemon is already running!");
     }
 
-    if socket_path.exists() {
-        fs::remove_file(socket_path).context("Failed to remove the existing socket file")?;
+    if paths.daemon_socket_file.exists() {
+        fs::remove_file(&paths.daemon_socket_file)
+            .context("Failed to remove the existing socket file")?;
     }
 
-    let socket = UnixListener::bind(&socket_path)
+    let socket = UnixListener::bind(&paths.daemon_socket_file)
         .context("Failed to create socket with the provided path")?;
 
     info!("Launching a separate thread for the socket listener...");
@@ -151,7 +149,7 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
 
             info!("[Exiting] Now exiting.");
 
-            if let Err(err) = fs::remove_file(&paths.daemon_paths().socket_file()) {
+            if let Err(err) = fs::remove_file(&paths.daemon_socket_file) {
                 error!("Failed to remove the socket file, this might cause problem during the next start: {err}");
             }
 

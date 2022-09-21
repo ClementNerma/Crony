@@ -144,7 +144,7 @@ fn inner_main() -> Result<()> {
                 )
             }
 
-            let socket_file = &paths.daemon_paths().socket_file();
+            let socket_file = &paths.daemon_socket_file;
 
             if is_daemon_running(socket_file)? {
                 info!("Asking the daemon to reload the tasks...");
@@ -173,7 +173,7 @@ fn inner_main() -> Result<()> {
 
             success!("Successfully removed task {}.", name.bright_yellow());
 
-            let socket_file = &paths.daemon_paths().socket_file();
+            let socket_file = &paths.daemon_socket_file;
 
             if is_daemon_running(socket_file)? {
                 info!("Asking the daemon to reload the tasks...");
@@ -204,7 +204,7 @@ fn inner_main() -> Result<()> {
         Action::DaemonStatus => {
             info!("Checking daemon's status...");
 
-            let socket_file = paths.daemon_paths().socket_file();
+            let socket_file = paths.daemon_socket_file;
 
             if !is_daemon_running(&socket_file)? {
                 warn!("Daemon is not running.");
@@ -226,16 +226,14 @@ fn inner_main() -> Result<()> {
         Action::DaemonStop => {
             info!("Asking the daemon to stop...");
 
-            let socket_path = &paths.daemon_paths().socket_file();
-
-            let mut client = DaemonClient::connect(socket_path)?;
+            let mut client = DaemonClient::connect(&paths.daemon_socket_file)?;
             client.stop()?;
 
             info!("Request succesfully transmitted, waiting for the daemon to actually stop...");
 
             let mut last_running = 0;
 
-            while is_daemon_running(socket_path)? {
+            while is_daemon_running(&paths.daemon_socket_file)? {
                 let running = client.running_tasks()?;
 
                 if running != last_running {
