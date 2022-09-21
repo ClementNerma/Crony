@@ -18,6 +18,9 @@ pub enum Action {
     #[clap(about = "List registered tasks")]
     List,
 
+    #[clap(about = "Check if any task recently failed")]
+    Check,
+
     #[clap(about = "Register a task (if not registered yet)")]
     Register(RegisterArgs),
 

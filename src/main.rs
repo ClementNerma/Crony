@@ -92,6 +92,30 @@ fn inner_main() -> Result<()> {
             println!("{}", table);
         }
 
+        Action::Check => {
+            let mut failed = false;
+
+            for task in tasks.values() {
+                let history = read_history_if_exists(&paths.task_paths(&task.name))?;
+
+                if let Some(last_run) = history.find_last_for(&task.name) {
+                    if !last_run.succeeded() {
+                        error!(
+                            "Task '{}' failed on {}!",
+                            task.name.bright_yellow(),
+                            last_run.ended_at.to_string().bright_magenta()
+                        );
+
+                        failed = true;
+                    }
+                }
+            }
+
+            if failed {
+                bail!("Some tasks failed.");
+            }
+        }
+
         Action::Register(RegisterArgs {
             name,
             run_at,
