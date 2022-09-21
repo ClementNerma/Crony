@@ -87,26 +87,24 @@ fn inner_main() -> Result<()> {
         }
 
         Action::Check => {
-            let mut failed = false;
+            let mut errors = vec![];
 
             for task in tasks.values() {
                 let history = read_history_if_exists(&paths.task_paths(&task.name))?;
 
                 if let Some(last_run) = history.find_last_for(task.id) {
                     if !last_run.succeeded() {
-                        error!(
-                            "Task '{}' failed on {}!",
+                        errors.push(format!(
+                            "Task '{}' failed on {}.",
                             task.name.bright_yellow(),
                             last_run.ended_at.to_string().bright_magenta()
-                        );
-
-                        failed = true;
+                        ));
                     }
                 }
             }
 
-            if failed {
-                bail!("Some tasks failed.");
+            if !errors.is_empty() {
+                bail!("{}", errors.join("\n"));
             }
         }
 
