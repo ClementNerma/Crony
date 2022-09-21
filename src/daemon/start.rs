@@ -31,6 +31,10 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
             .context("Failed to create the daemon's data directory")?;
     }
 
+    if is_daemon_running(&paths.daemon_socket_file)? {
+        bail!("Daemon is already running.");
+    }
+
     let stdout_file = OpenOptions::new()
         .create(true)
         .append(true)
