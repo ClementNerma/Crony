@@ -71,12 +71,12 @@ pub fn run_tasks(
 
         queue.write().unwrap().remove(&task_id).unwrap();
 
-        let queue = Arc::clone(&queue);
         let task = tasks
             .values()
             .find(|task| task.id == task_id)
             .unwrap()
             .clone();
+
         let task_runner = Arc::clone(&task_runner);
 
         notice!(
@@ -84,6 +84,8 @@ pub fn run_tasks(
             task.name,
             (now - planned_for).whole_seconds()
         );
+
+        let queue = Arc::clone(&queue);
 
         std::thread::spawn(move || {
             task_runner.read().unwrap()(&task);
