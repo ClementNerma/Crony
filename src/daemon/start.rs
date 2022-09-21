@@ -22,7 +22,8 @@ use crate::{
     paths::Paths,
     save::read_tasks,
     sleep::sleep_ms,
-    success, RunningTasksInterface,
+    success,
+    task::Task,
 };
 
 static SOCKET_FILE_PATH: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
@@ -98,30 +99,6 @@ fn daemon_core(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
 fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<State>>) -> ! {
     info!("Starting the engine...");
 
-    let state_for_interface_1 = Arc::clone(&state);
-    let state_for_interface_2 = Arc::clone(&state);
-
-    let interface = Arc::new(RunningTasksInterface {
-        mark_task_as_done: Box::new(move |task_id| {
-            state_for_interface_1
-                .write()
-                .unwrap()
-                .running_tasks
-                .remove(&task_id)
-                .unwrap();
-        }),
-
-        mark_task_as_running: Box::new(move |task| {
-            state_for_interface_2.write().unwrap().running_tasks.insert(
-                task.id,
-                RunningTask {
-                    task: task.clone(),
-                    started: get_now(),
-                },
-            );
-        }),
-    });
-
     loop {
         if state.read().unwrap().exit {
             info!("Exiting safely as requested...");
@@ -169,16 +146,28 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
             state.write().unwrap().must_reload_tasks = false;
         }
 
-        start_engine(
-            paths,
-            &tasks,
-            &args.engine_args,
-            Arc::clone(&interface),
-            || {
-                let state = state.read().unwrap();
-                state.must_reload_tasks || state.exit
-            },
-        );
+        let state_for_marker = Arc::clone(&state);
+
+        let interface = move |task: &Task, running| {
+            let running_tasks = &mut state_for_marker.write().unwrap().running_tasks;
+
+            if running {
+                running_tasks.remove(&task.id).unwrap();
+            } else {
+                running_tasks.insert(
+                    task.id,
+                    RunningTask {
+                        task: task.clone(),
+                        started: get_now(),
+                    },
+                );
+            }
+        };
+
+        start_engine(paths, &tasks, &args.engine_args, interface, || {
+            let state = state.read().unwrap();
+            state.must_reload_tasks || state.exit
+        });
     }
 
     #[allow(unreachable_code)]

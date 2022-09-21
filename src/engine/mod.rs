@@ -7,8 +7,6 @@ pub use cmd::*;
 pub use runner::runner;
 pub use upcoming::get_upcoming_moment;
 
-use std::sync::Arc;
-
 use crate::{
     error, error_anyhow,
     paths::Paths,
@@ -22,7 +20,7 @@ pub fn start_engine(
     paths: &Paths,
     tasks: &Tasks,
     args: &EngineArgs,
-    interface: Arc<RunningTasksInterface>,
+    marker: impl Fn(&Task, bool) + Send + Sync + 'static,
     stop_on: impl Fn() -> bool,
 ) {
     let paths = paths.clone();
@@ -32,11 +30,11 @@ pub fn start_engine(
     run_tasks(
         tasks,
         move |task| {
-            (interface.mark_task_as_running)(task);
+            (marker)(task, true);
 
             let result = runner(task, &paths.task_paths(&task.name), !direct_output);
 
-            (interface.mark_task_as_done)(task.id);
+            (marker)(task, false);
 
             if let Err(err) = result {
                 error_anyhow!(err.context("Runner failed to run (from Scheduler)"));
@@ -46,9 +44,4 @@ pub fn start_engine(
         },
         stop_on,
     )
-}
-
-pub struct RunningTasksInterface {
-    pub mark_task_as_running: Box<dyn Fn(&Task) + Send + Sync>,
-    pub mark_task_as_done: Box<dyn Fn(u64) + Send + Sync>,
 }
