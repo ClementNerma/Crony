@@ -16,7 +16,7 @@ pub struct Cmd {
 #[derive(Subcommand)]
 pub enum Action {
     #[clap(about = "List registered tasks")]
-    List(ListArgs),
+    List,
 
     #[clap(about = "Register a task (if not registered yet)")]
     Register(RegisterArgs),
@@ -36,9 +36,6 @@ pub enum Action {
     #[clap(about = "Stop the daemon")]
     DaemonStop,
 }
-
-#[derive(Args)]
-pub struct ListArgs {}
 
 #[derive(Args)]
 pub struct RegisterArgs {

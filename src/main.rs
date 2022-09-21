@@ -22,7 +22,7 @@ use tabular::{row, Table};
 
 use crate::{
     at::At,
-    cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, UnregisterArgs},
+    cmd::{Action, Cmd, RegisterArgs, RunArgs, UnregisterArgs},
     daemon::{is_daemon_running, start_daemon, Client, DaemonClient},
     datetime::human_datetime,
     engine::runner,
@@ -46,7 +46,7 @@ fn inner_main() -> Result<()> {
     let mut tasks = read_tasks(&paths)?;
 
     match cmd.action {
-        Action::List(ListArgs {}) => {
+        Action::List => {
             if tasks.is_empty() {
                 info!("No task found.");
                 return Ok(());
