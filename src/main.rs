@@ -133,6 +133,10 @@ fn inner_main() -> Result<()> {
                 shell: using,
             };
 
+            let next = task.run_at.next_occurrence().context(
+                "Failed to find a valid next occurrence for the provided repetition pattern",
+            )?;
+
             if let Some(existing) = tasks.get(&name) {
                 let mut simili = existing.clone();
                 simili.id = task.id;
@@ -164,7 +168,11 @@ fn inner_main() -> Result<()> {
             write_tasks(&paths, &tasks)?;
 
             if !silent {
-                success!("Successfully registered task {}.", name.bright_yellow(),)
+                success!("Successfully registered task {}.", name.bright_yellow());
+                success!(
+                    "If the daemon is running, the task will run on {}",
+                    next.to_string().bright_magenta()
+                );
             }
 
             let socket_file = &paths.daemon_socket_file;

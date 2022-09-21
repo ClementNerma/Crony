@@ -5,6 +5,7 @@ mod upcoming;
 
 pub use cmd::*;
 pub use runner::runner;
+pub use upcoming::get_upcoming_moment;
 
 use std::sync::Arc;
 

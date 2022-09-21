@@ -8,6 +8,9 @@ use once_cell::sync::Lazy;
 use pomsky_macro::pomsky;
 use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
+
+use crate::{datetime::get_now, get_upcoming_moment};
 
 static AT_STR_PARSER: Lazy<Regex> = Lazy::new(|| {
     Regex::new(pomsky!(
@@ -175,6 +178,10 @@ impl At {
         }
 
         Ok(Some(occ))
+    }
+
+    pub fn next_occurrence(&self) -> Result<OffsetDateTime> {
+        get_upcoming_moment(get_now(), self)
     }
 }
 
