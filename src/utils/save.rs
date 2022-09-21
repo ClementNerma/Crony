@@ -72,7 +72,7 @@ pub fn read_history_if_exists(task_paths: &TaskPaths) -> Result<History> {
 
     let raw = fs::read_to_string(&history_file).context("Failed to read history file")?;
 
-    History::parse(&raw)
+    History::parse(&raw).context("Failed to parse the history file")
 }
 
 pub fn append_to_history(task_paths: &TaskPaths, entry: &HistoryEntry) -> Result<()> {

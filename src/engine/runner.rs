@@ -82,6 +82,7 @@ pub fn runner(
     );
 
     let entry = HistoryEntry {
+        task_id: task.id,
         task_name: task.name.clone(),
         started_at,
         ended_at,

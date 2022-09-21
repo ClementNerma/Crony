@@ -24,15 +24,16 @@ impl History {
         Ok(Self { entries })
     }
 
-    pub fn find_last_for(&self, task_name: &str) -> Option<&HistoryEntry> {
+    pub fn find_last_for(&self, task_id: u64) -> Option<&HistoryEntry> {
         self.entries
             .iter()
             .rev()
-            .find(|entry| entry.task_name == task_name)
+            .find(|entry| entry.task_id == task_id)
     }
 }
 
 pub struct HistoryEntry {
+    pub task_id: u64,
     pub task_name: String,
     pub started_at: OffsetDateTime,
     pub ended_at: OffsetDateTime,
@@ -43,12 +44,14 @@ impl HistoryEntry {
     pub fn parse(input: &str) -> Result<Self> {
         let mut segments = input.split(';');
 
+        let task_id = segments.next().context("Missing task ID")?;
         let task_name = segments.next().context("Missing task name")?;
         let started_at = segments.next().context("Missing start date")?;
         let ended_at = segments.next().context("Missing end date")?;
         let result = segments.next().context("Missing failure code")?;
 
         Ok(Self {
+            task_id: task_id.parse().context("Failed to parse task ID")?,
             task_name: task_name.to_string(),
             started_at: OffsetDateTime::parse(started_at, &Iso8601::DEFAULT)
                 .context("Failed to parse start date")?,
@@ -60,7 +63,8 @@ impl HistoryEntry {
 
     pub fn encode(&self) -> String {
         format!(
-            "{};{};{};{}",
+            "{};{};{};{};{}",
+            self.task_id,
             self.task_name,
             self.started_at.format(&Iso8601::DEFAULT).unwrap(),
             self.ended_at.format(&Iso8601::DEFAULT).unwrap(),

@@ -60,7 +60,7 @@ fn inner_main() -> Result<()> {
             for task in tasks.values() {
                 let history = read_history_if_exists(&paths.task_paths(&task.name))?;
 
-                let last_run = match history.find_last_for(&task.name) {
+                let last_run = match history.find_last_for(task.id) {
                     None => "Never run".bright_black().italic(),
                     Some(entry) => {
                         let time = human_datetime(entry.started_at);
@@ -98,7 +98,7 @@ fn inner_main() -> Result<()> {
             for task in tasks.values() {
                 let history = read_history_if_exists(&paths.task_paths(&task.name))?;
 
-                if let Some(last_run) = history.find_last_for(&task.name) {
+                if let Some(last_run) = history.find_last_for(task.id) {
                     if !last_run.succeeded() {
                         error!(
                             "Task '{}' failed on {}!",
