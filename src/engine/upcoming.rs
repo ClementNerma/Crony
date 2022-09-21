@@ -159,7 +159,7 @@ pub fn get_upcoming_moment(after: OffsetDateTime, at: &At) -> Result<OffsetDateT
 
                 for years in 0..4 {
                     if let Ok(next) = next
-                        .replace_year(next.year() + years)
+                        .replace_year(next.year() + years + 1)
                         .and_then(|date| date.replace_month(goal))
                     {
                         found = Some(next);
