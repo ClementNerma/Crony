@@ -176,6 +176,8 @@ fn inner_main() -> Result<()> {
                 client.reload_tasks()?;
 
                 success!("Daemon successfully reloaded the tasks!");
+            } else {
+                warn!("Warning: the daemon is not running.")
             }
         }
 
@@ -205,6 +207,8 @@ fn inner_main() -> Result<()> {
                 client.reload_tasks()?;
 
                 success!("Daemon successfully reloaded the tasks!");
+            } else {
+                warn!("Warning: the daemon is not running.")
             }
         }
 
