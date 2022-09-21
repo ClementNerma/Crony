@@ -34,6 +34,10 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
     }
 
     if is_daemon_running(&paths.daemon_socket_file)? {
+        if args.ignore_started {
+            return Ok(());
+        }
+
         bail!("Daemon is already running.");
     }
 

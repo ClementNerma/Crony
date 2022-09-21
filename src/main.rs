@@ -233,7 +233,6 @@ fn inner_main() -> Result<()> {
         }
 
         Action::DaemonStart(args) => {
-            info!("Starting the daemon...");
             start_daemon(&paths, &args)?;
         }
 
