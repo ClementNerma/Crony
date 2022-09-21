@@ -25,12 +25,7 @@ pub fn run_tasks(
 
     let queue = tasks
         .values()
-        .map(|task| {
-            (
-                task.name.clone(),
-                get_upcoming_moment(now, &task.at).unwrap(),
-            )
-        })
+        .map(|task| (task.id, get_upcoming_moment(now, &task.at).unwrap()))
         .collect::<HashMap<_, _>>();
 
     let queue = Arc::new(RwLock::new(queue));
@@ -60,9 +55,9 @@ pub fn run_tasks(
             .unwrap()
             .iter()
             .min_by_key(|(_, moment)| **moment)
-            .map(|(a, b)| (a.clone(), *b));
+            .map(|(a, b)| (*a, *b));
 
-        let (task_name, planned_for) = match nearest {
+        let (task_id, planned_for) = match nearest {
             None => {
                 short_sleep(None);
                 continue;
@@ -74,10 +69,14 @@ pub fn run_tasks(
             Some(nearest) => nearest,
         };
 
-        queue.write().unwrap().remove(&task_name).unwrap();
+        queue.write().unwrap().remove(&task_id).unwrap();
 
         let queue = Arc::clone(&queue);
-        let task = tasks.get(&task_name).unwrap().clone();
+        let task = tasks
+            .values()
+            .find(|task| task.id == task_id)
+            .unwrap()
+            .clone();
         let task_runner = Arc::clone(&task_runner);
 
         notice!(
@@ -93,7 +92,7 @@ pub fn run_tasks(
 
             let planned = get_new_upcoming_moment(get_now(), &task.at, planned_for).unwrap();
 
-            queue.insert(task.name.clone(), planned);
+            queue.insert(task.id, planned);
         });
     }
 }
