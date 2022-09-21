@@ -40,6 +40,9 @@ pub enum Action {
     #[clap(about = "Check the daemon's status")]
     Status,
 
+    #[clap(about = "Check the scheduled and running tasks")]
+    Scheduled,
+
     #[clap(about = "Stop the daemon")]
     Stop,
 }

@@ -5,6 +5,7 @@ mod upcoming;
 
 pub use cmd::*;
 pub use runner::runner;
+pub use scheduler::SharedSchedulerQueue;
 pub use upcoming::get_upcoming_moment;
 
 use crate::{
@@ -21,7 +22,7 @@ pub fn start_engine(
     tasks: &Tasks,
     args: &EngineArgs,
     marker: impl Fn(&Task, bool) + Send + Sync + 'static,
-    stop_on: impl Fn() -> bool,
+    stop_on: impl Fn(SharedSchedulerQueue) -> bool,
 ) {
     let paths = paths.clone();
 

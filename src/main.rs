@@ -24,7 +24,7 @@ use tabular::{row, Table};
 use crate::{
     at::At,
     cmd::{Action, Cmd, RegisterArgs, RunArgs, UnregisterArgs},
-    daemon::{is_daemon_running, start_daemon, DaemonClient},
+    daemon::{is_daemon_running, start_daemon, DaemonClient, RunningTask},
     datetime::human_datetime,
     engine::runner,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
@@ -265,13 +265,41 @@ fn inner_main() -> Result<()> {
             }
         }
 
+        Action::Scheduled => {
+            let mut client = DaemonClient::connect(&paths.daemon_socket_file)?;
+            let scheduled = client.scheduled()?;
+
+            info!("List of upcoming / running tasks:");
+            info!("");
+
+            let mut table = Table::new("{:>} {:<} {:<}");
+
+            for RunningTask { task, started } in scheduled.running {
+                table.add_row(row!(
+                    task.name.bright_cyan(),
+                    "Running".bright_green(),
+                    started.to_string().bright_magenta()
+                ));
+            }
+
+            for (task, time) in scheduled.upcoming {
+                table.add_row(row!(
+                    task.name.bright_cyan(),
+                    "Scheduled".bright_yellow(),
+                    time.to_string().bright_magenta()
+                ));
+            }
+
+            println!("{}", table);
+        }
+
         Action::Stop => {
-            info!("Asking the daemon to stop...");
+            debug!("Asking the daemon to stop...");
 
             let mut client = DaemonClient::connect(&paths.daemon_socket_file)?;
             client.stop()?;
 
-            info!("Request succesfully transmitted, waiting for the daemon to actually stop...");
+            debug!("Request succesfully transmitted, waiting for the daemon to actually stop...");
 
             let mut last_running = 0;
 

@@ -164,7 +164,27 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
             }
         };
 
-        start_engine(paths, &tasks, &args.engine_args, interface, || {
+        start_engine(paths, &tasks, &args.engine_args, interface, |scheduled| {
+            if state.read().unwrap().scheduled_request == Some(None) {
+                let mut state = state.write().unwrap();
+
+                let scheduled = scheduled
+                    .read()
+                    .unwrap()
+                    .iter()
+                    .map(|(a, b)| {
+                        (
+                            tasks.values().find(|task| task.id == *a).unwrap().clone(),
+                            *b,
+                        )
+                    })
+                    .collect();
+
+                state.scheduled_request = Some(Some(scheduled));
+
+                drop(state);
+            }
+
             let state = state.read().unwrap();
             state.must_reload_tasks || state.exit
         });

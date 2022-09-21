@@ -17,7 +17,7 @@ use super::upcoming::{get_new_upcoming_moment, get_upcoming_moment};
 pub fn run_tasks(
     tasks: &Tasks,
     task_runner: impl Fn(&Task) + Send + Sync + 'static,
-    stop_on: impl Fn() -> bool,
+    stop_on: impl Fn(SharedSchedulerQueue) -> bool,
 ) {
     let task_runner = Arc::new(RwLock::new(task_runner));
 
@@ -47,7 +47,7 @@ pub fn run_tasks(
 
     info!("Scheduler is running.");
 
-    while !stop_on() {
+    while !stop_on(Arc::clone(&queue)) {
         let now = get_now_second_precision();
 
         let nearest = queue
@@ -98,3 +98,5 @@ pub fn run_tasks(
         });
     }
 }
+
+pub type SharedSchedulerQueue = Arc<RwLock<HashMap<u64, OffsetDateTime>>>;
