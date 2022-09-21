@@ -239,7 +239,7 @@ fn inner_main() -> Result<()> {
                 let running = client.running_tasks()?;
 
                 if running != last_running {
-                    info!("Waiting for {} tasks to complete...", running);
+                    info!("Waiting for {} task(s) to complete...", running);
                     last_running = running;
                 }
 
