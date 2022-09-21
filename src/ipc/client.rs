@@ -17,6 +17,14 @@ pub struct SocketClient<A: Serialize, B: DeserializeOwned> {
 }
 
 impl<A: Serialize, B: DeserializeOwned> SocketClient<A, B> {
+    pub fn new(stream: UnixStream) -> Self {
+        Self {
+            stream,
+            _req: PhantomData,
+            _res: PhantomData,
+        }
+    }
+
     pub fn connect(socket_path: &Path) -> Result<Self> {
         let stream =
             UnixStream::connect(socket_path).context("Failed to connect to the provided socket")?;

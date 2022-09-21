@@ -1,19 +1,23 @@
 use std::{
     fs::{self, OpenOptions},
     io::{self, Write},
+    os::unix::net::UnixListener,
     sync::{Arc, RwLock},
     time::Duration,
 };
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use daemonize_me::Daemon;
 
 use crate::{
-    daemon::service::{daemon::process, State},
+    daemon::{
+        is_daemon_running,
+        service::{daemon::process, State},
+    },
     datetime::get_now,
     engine::start_engine,
-    error_anyhow, info,
-    ipc::{create_socket, serve_on_socket},
+    error, error_anyhow, info,
+    ipc::serve_on_socket,
     paths::Paths,
     save::read_tasks,
     success,
@@ -48,17 +52,45 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
         .start()
         .context("Failed to start the daemon")?;
 
+    if let Err(err) = daemon_core(paths, args) {
+        error!("Daemon exited with an error: {:?}", err);
+        std::process::exit(1);
+    }
+
+    #[allow(unreachable_code)]
+    {
+        unreachable!()
+    }
+}
+
+fn daemon_core(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
     info!("Successfully started the daemon on {}", get_now());
     info!("Setting up the socket...");
 
-    let socket = create_socket(&d_paths.socket_file()).unwrap();
+    let socket_path = &paths.daemon_paths().socket_file();
+
+    if is_daemon_running(socket_path)? {
+        bail!("Daemon is already running!");
+    }
+
+    if socket_path.exists() {
+        fs::remove_file(socket_path).context("Failed to remove the existing socket file")?;
+    }
+
+    let socket = UnixListener::bind(&socket_path)
+        .context("Failed to create socket with the provided path")?;
 
     info!("Launching a separate thread for the socket listener...");
+
     let state = Arc::new(RwLock::new(State::new()));
     let state_server = Arc::clone(&state);
 
     std::thread::spawn(|| serve_on_socket(socket, process, state_server));
 
+    daemon_core_loop(paths, args, state)
+}
+
+fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<State>>) -> ! {
     info!("Starting the engine...");
 
     loop {
@@ -73,9 +105,12 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
             }
         };
 
+        if state.read().unwrap().must_reload_tasks {
+            state.write().unwrap().must_reload_tasks = false;
+        }
+
         start_engine(paths, &tasks, &args.engine_args, || {
-            // TODO
-            false
+            state.read().unwrap().must_reload_tasks
         });
     }
 

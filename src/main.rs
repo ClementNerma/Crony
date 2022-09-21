@@ -24,7 +24,7 @@ use tabular::{row, Table};
 use crate::{
     at::At,
     cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, UnregisterArgs},
-    daemon::{check_daemon_status, start_daemon, Client, DaemonClient, DaemonStatus},
+    daemon::{is_daemon_running, start_daemon, Client, DaemonClient},
     datetime::human_datetime,
     engine::{runner::runner, start_engine},
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
@@ -194,21 +194,20 @@ fn inner_main() -> Result<()> {
 
             let socket_file = paths.daemon_paths().socket_file();
 
-            match check_daemon_status(&socket_file)? {
-                DaemonStatus::NoSocketFile | DaemonStatus::NotRunning => {
-                    warn!("Daemon is not running.");
-                    return Ok(());
-                }
-                DaemonStatus::Running => success!("Daemon is running."),
+            if !is_daemon_running(&socket_file)? {
+                warn!("Daemon is not running.");
+                return Ok(());
             }
+
+            success!("Daemon is running, sending a test request...");
 
             let mut client = DaemonClient::connect(&socket_file)?;
             let res = client.hello()?;
 
             if res == "Hello" {
-                success!("Daemon responses successfully to a test call.");
+                success!("Daemon responsed successfully to a test request.");
             } else {
-                error!("Daemon responsed unsuccessfully to a test call.");
+                error!("Daemon responsed unsuccessfully to a test request.");
             }
         }
     }

@@ -1,33 +1,15 @@
 use std::{
-    fs,
     io::{BufRead, BufReader, Write},
     os::unix::net::{UnixListener, UnixStream},
-    path::Path,
     sync::Arc,
     time::Duration,
 };
 
-use anyhow::{bail, Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{
-    daemon::{check_daemon_status, DaemonStatus},
-    error, info,
-};
+use crate::{error, info};
 
 use super::{Request, Response};
-
-pub fn create_socket(socket_path: &Path) -> Result<UnixListener> {
-    match check_daemon_status(socket_path)? {
-        DaemonStatus::NoSocketFile => {}
-        DaemonStatus::NotRunning => {
-            fs::remove_file(socket_path).context("Failed to remove the existing socket file")?
-        }
-        DaemonStatus::Running => bail!("Daemon is already running!"),
-    }
-
-    UnixListener::bind(&socket_path).context("Failed to create socket with the provided path")
-}
 
 pub fn serve_on_socket<A: DeserializeOwned, B: Serialize, S: Send + Sync + 'static>(
     listener: UnixListener,
