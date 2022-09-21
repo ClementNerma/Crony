@@ -12,7 +12,7 @@ use daemonize_me::Daemon;
 use crate::{
     daemon::{
         is_daemon_running,
-        service::{daemon::process, State},
+        service::{daemon::process, RunningTask, State},
     },
     datetime::get_now,
     engine::start_engine,
@@ -20,7 +20,7 @@ use crate::{
     ipc::serve_on_socket,
     paths::Paths,
     save::read_tasks,
-    success,
+    success, RunningTasksInterface,
 };
 
 use super::DaemonStartArgs;
@@ -93,7 +93,71 @@ fn daemon_core(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
 fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<State>>) -> ! {
     info!("Starting the engine...");
 
+    let state_for_interface_1 = Arc::clone(&state);
+    let state_for_interface_2 = Arc::clone(&state);
+    let state_for_interface_3 = Arc::clone(&state);
+
+    let interface = Arc::new(RunningTasksInterface {
+        is_task_running: Box::new(move |task_id| {
+            state_for_interface_1
+                .read()
+                .unwrap()
+                .running_tasks
+                .contains_key(&task_id)
+        }),
+
+        mark_task_as_done: Box::new(move |task_id| {
+            state_for_interface_2
+                .write()
+                .unwrap()
+                .running_tasks
+                .remove(&task_id)
+                .unwrap();
+        }),
+
+        mark_task_as_running: Box::new(move |task| {
+            state_for_interface_3.write().unwrap().running_tasks.insert(
+                task.id,
+                RunningTask {
+                    task: task.clone(),
+                    started: get_now(),
+                },
+            );
+        }),
+    });
+
     loop {
+        if state.read().unwrap().exit {
+            info!("Exiting safely as requested...");
+
+            state.write().unwrap().exit = false;
+
+            let mut last_running = 0;
+
+            loop {
+                let len = state.read().unwrap().running_tasks.len();
+
+                if len == 0 {
+                    break;
+                }
+
+                if len != last_running {
+                    info!("[Exiting] Waiting for {} tasks to complete...", len);
+                    last_running = len;
+                }
+
+                std::thread::sleep(Duration::from_millis(100));
+            }
+
+            info!("[Exiting] Now exiting.");
+
+            if let Err(err) = fs::remove_file(&paths.daemon_paths().socket_file()) {
+                error!("Failed to remove the socket file, this might cause problem during the next start: {err}");
+            }
+
+            std::process::exit(0);
+        }
+
         let tasks = match read_tasks(paths) {
             Ok(tasks) => tasks,
             Err(err) => {
@@ -109,9 +173,16 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
             state.write().unwrap().must_reload_tasks = false;
         }
 
-        start_engine(paths, &tasks, &args.engine_args, || {
-            state.read().unwrap().must_reload_tasks
-        });
+        start_engine(
+            paths,
+            &tasks,
+            &args.engine_args,
+            Arc::clone(&interface),
+            || {
+                let state = state.read().unwrap();
+                state.must_reload_tasks || state.exit
+            },
+        );
     }
 
     #[allow(unreachable_code)]

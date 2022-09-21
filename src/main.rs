@@ -8,12 +8,11 @@ mod engine;
 mod ipc;
 mod utils;
 
-use daemon::DaemonStatusArgs;
 pub use data::*;
 pub use engine::*;
 pub use utils::*;
 
-use std::fs;
+use std::{fs, time::Duration};
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
@@ -26,7 +25,7 @@ use crate::{
     cmd::{Action, Cmd, ListArgs, RegisterArgs, RunArgs, UnregisterArgs},
     daemon::{is_daemon_running, start_daemon, Client, DaemonClient},
     datetime::human_datetime,
-    engine::{runner::runner, start_engine},
+    engine::{runner, start_engine},
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
     task::Task,
 };
@@ -199,7 +198,7 @@ fn inner_main() -> Result<()> {
 
         Action::Foreground(args) => {
             info!("Starting the engine (foreground)...");
-            start_engine(&paths, &read_tasks(&paths)?, &args, || false);
+            start_engine(&paths, &read_tasks(&paths)?, &args, todo!(), || false);
         }
 
         Action::DaemonStart(args) => {
@@ -207,7 +206,7 @@ fn inner_main() -> Result<()> {
             start_daemon(&paths, &args)?;
         }
 
-        Action::DaemonStatus(DaemonStatusArgs {}) => {
+        Action::DaemonStatus => {
             info!("Checking daemon's status...");
 
             let socket_file = paths.daemon_paths().socket_file();
@@ -227,6 +226,32 @@ fn inner_main() -> Result<()> {
             } else {
                 error!("Daemon responsed unsuccessfully to a test request.");
             }
+        }
+
+        Action::DaemonStop => {
+            info!("Asking the daemon to stop...");
+
+            let socket_path = &paths.daemon_paths().socket_file();
+
+            let mut client = DaemonClient::connect(socket_path)?;
+            client.stop()?;
+
+            info!("Request succesfully transmitted, waiting for the daemon to actually stop...");
+
+            let mut last_running = 0;
+
+            while is_daemon_running(socket_path)? {
+                let running = client.running_tasks()?;
+
+                if running != last_running {
+                    info!("Waiting for {} tasks to complete...", running);
+                    last_running = running;
+                }
+
+                std::thread::sleep(Duration::from_millis(100));
+            }
+
+            success!("Daemon was successfully stopped!");
         }
     }
 
