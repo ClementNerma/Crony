@@ -2,6 +2,7 @@
 
 Crony is a replacement tool for the famous `cron` as well as `crontab`. It provides a considerable list of advantages compared to the original:
 
+* Fits in a single, ~1 MB executable
 * Clear repetition syntax, immediatly readable and not error-prone
 * Ability to name tasks
 * Ability to list all tasks, see their last execution date and exit status
