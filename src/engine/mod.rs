@@ -49,7 +49,6 @@ pub fn start_engine(
 }
 
 pub struct RunningTasksInterface {
-    pub is_task_running: Box<dyn Fn(u64) -> bool + Send + Sync>,
     pub mark_task_as_running: Box<dyn Fn(&Task) + Send + Sync>,
     pub mark_task_as_done: Box<dyn Fn(u64) + Send + Sync>,
 }

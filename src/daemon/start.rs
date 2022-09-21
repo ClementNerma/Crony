@@ -100,19 +100,10 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
 
     let state_for_interface_1 = Arc::clone(&state);
     let state_for_interface_2 = Arc::clone(&state);
-    let state_for_interface_3 = Arc::clone(&state);
 
     let interface = Arc::new(RunningTasksInterface {
-        is_task_running: Box::new(move |task_id| {
-            state_for_interface_1
-                .read()
-                .unwrap()
-                .running_tasks
-                .contains_key(&task_id)
-        }),
-
         mark_task_as_done: Box::new(move |task_id| {
-            state_for_interface_2
+            state_for_interface_1
                 .write()
                 .unwrap()
                 .running_tasks
@@ -121,7 +112,7 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
         }),
 
         mark_task_as_running: Box::new(move |task| {
-            state_for_interface_3.write().unwrap().running_tasks.insert(
+            state_for_interface_2.write().unwrap().running_tasks.insert(
                 task.id,
                 RunningTask {
                     task: task.clone(),
