@@ -2,7 +2,6 @@ use std::{
     io::{BufRead, BufReader, Write},
     marker::PhantomData,
     os::unix::net::UnixStream,
-    path::Path,
 };
 
 use anyhow::{Context, Result};
@@ -25,16 +24,16 @@ impl<A: Serialize, B: DeserializeOwned> SocketClient<A, B> {
         }
     }
 
-    pub fn connect(socket_path: &Path) -> Result<Self> {
-        let stream =
-            UnixStream::connect(socket_path).context("Failed to connect to the provided socket")?;
+    // pub fn connect(socket_path: &Path) -> Result<Self> {
+    //     let stream =
+    //         UnixStream::connect(socket_path).context("Failed to connect to the provided socket")?;
 
-        Ok(Self {
-            stream,
-            _req: PhantomData,
-            _res: PhantomData,
-        })
-    }
+    //     Ok(Self {
+    //         stream,
+    //         _req: PhantomData,
+    //         _res: PhantomData,
+    //     })
+    // }
 
     pub fn send_unchecked(&mut self, req: A) -> Result<B> {
         let req = Request {
