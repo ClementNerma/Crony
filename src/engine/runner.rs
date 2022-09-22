@@ -64,9 +64,10 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
 
     for line in reader.lines() {
         let line = line.unwrap();
-        let line = format!("[{}] {}", get_now(), line);
+        let mut line = format!("[{}] {}", get_now(), line);
 
         if use_log_files {
+            line.push('\n');
             log_file.write_all(line.as_bytes()).unwrap();
         } else {
             println!("{line}");
