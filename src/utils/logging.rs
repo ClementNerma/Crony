@@ -1,12 +1,18 @@
 use std::sync::atomic::AtomicBool;
 
 pub static PRINT_DEBUG_MESSAGES: AtomicBool = AtomicBool::new(false);
+pub static PRINT_MESSAGES_DATETIME: AtomicBool = AtomicBool::new(false);
 
 #[macro_export]
 macro_rules! _format {
     ($color: ident => $message: tt, $($params: tt)*) => {{
         use colored::Colorize;
-        let msg = format!($message, $($params)*);
+        let mut msg = format!($message, $($params)*);
+
+        if $crate::utils::logging::PRINT_MESSAGES_DATETIME.load(::std::sync::atomic::Ordering::Relaxed) {
+            msg = format!("[{}] {msg}", $crate::utils::datetime::get_now());
+        }
+
         msg.$color()
     }}
 }

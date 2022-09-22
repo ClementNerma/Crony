@@ -2,7 +2,7 @@ use std::{
     fs::{self, OpenOptions},
     os::unix::net::UnixListener,
     path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
+    sync::{atomic::Ordering, Arc, Mutex, RwLock},
 };
 
 use anyhow::{bail, Context, Result};
@@ -19,6 +19,7 @@ use crate::{
     engine::start_engine,
     error, error_anyhow, info,
     ipc::serve_on_socket,
+    logging::PRINT_MESSAGES_DATETIME,
     paths::Paths,
     save::read_tasks,
     sleep::sleep_ms,
@@ -67,6 +68,8 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
         .setup_post_fork_parent_hook(fork_exit)
         .start()
         .context("Failed to start the daemon")?;
+
+    PRINT_MESSAGES_DATETIME.store(true, Ordering::SeqCst);
 
     if let Err(err) = daemon_core(paths, args) {
         error!("Daemon exited with an error: {:?}", err);
