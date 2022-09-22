@@ -45,11 +45,17 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
 
     cmd.arg(&task.cmd);
 
-    let mut log_file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(paths.log_file())
-        .context("Failed to open the task's log file")?;
+    let mut log_file = if use_log_files {
+        Some(
+            OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(paths.log_file())
+                .context("Failed to open the task's log file")?,
+        )
+    } else {
+        None
+    };
 
     let (reader, writer) = os_pipe::pipe().context("Failed to obtain a pipe")?;
 
@@ -66,7 +72,7 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
         let line = line.unwrap();
         let mut line = format!("[{}] {}", get_now(), line);
 
-        if use_log_files {
+        if let Some(log_file) = &mut log_file {
             line.push('\n');
             log_file.write_all(line.as_bytes()).unwrap();
         } else {
