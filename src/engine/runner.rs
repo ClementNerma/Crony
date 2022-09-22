@@ -16,12 +16,7 @@ use anyhow::{bail, Context, Result};
 
 pub static DEFAULT_SHELL_CMD: &str = "/bin/sh -c";
 
-pub fn runner(
-    task: &Task,
-    paths: &TaskPaths,
-    use_log_files: bool,
-    // was_task_removed: impl FnOnce() -> bool,
-) -> Result<HistoryEntry> {
+pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<HistoryEntry> {
     if !paths.dir().exists() {
         bail!("Task's directory was not found!");
     }
