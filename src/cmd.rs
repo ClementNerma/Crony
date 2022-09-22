@@ -47,7 +47,7 @@ pub enum Action {
     Stop,
 
     #[clap(about = "Display the logs")]
-    Logs,
+    Logs(LogsArgs),
 }
 
 #[derive(Args)]
@@ -93,4 +93,10 @@ pub struct RunArgs {
         help = "Redirect output to the log files instead of STDOUT/STDERR"
     )]
     pub use_log_files: bool,
+}
+
+#[derive(Args)]
+pub struct LogsArgs {
+    #[clap(help = "Show the logs of a task")]
+    pub task_name: Option<String>,
 }

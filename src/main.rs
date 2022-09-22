@@ -24,7 +24,7 @@ use tabular::{row, Table};
 
 use crate::{
     at::At,
-    cmd::{Action, Cmd, RegisterArgs, RunArgs, UnregisterArgs},
+    cmd::{Action, Cmd, LogsArgs, RegisterArgs, RunArgs, UnregisterArgs},
     daemon::{is_daemon_running, start_daemon, DaemonClient, RunningTask},
     datetime::{get_now, human_datetime},
     engine::runner,
@@ -330,14 +330,30 @@ fn inner_main() -> Result<()> {
             success!("Daemon was successfully stopped!");
         }
 
-        Action::Logs => {
-            let log_file = fs::read_to_string(paths.daemon_log_file)
-                .context("Failed to read the daemon's log file")?;
+        Action::Logs(LogsArgs { task_name }) => {
+            let log_file = match task_name {
+                Some(task_name) => {
+                    if !tasks.contains_key(&task_name) {
+                        bail!("Provided task does not exist.");
+                    }
+
+                    paths.task_paths(&task_name).log_file()
+                }
+                None => paths.daemon_log_file,
+            };
+
+            if !log_file.exists() {
+                info!("No log file found.");
+                return Ok(());
+            }
+
+            let log_content =
+                fs::read_to_string(&log_file).context("Failed to read the daemon's log file")?;
 
             let output = Pager::new();
 
             output
-                .set_text(&log_file)
+                .set_text(&log_content)
                 .context("Failed to write log content to the pager")?;
 
             minus::page_all(output).context("Pager failed")?;
