@@ -1,6 +1,7 @@
 use std::{
     fs::OpenOptions,
-    process::{Command, Stdio},
+    io::{BufRead, BufReader, Write},
+    process::Command,
 };
 
 use crate::{
@@ -44,18 +45,35 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
 
     cmd.arg(&task.cmd);
 
-    if use_log_files {
-        let log_file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(paths.log_file())
-            .context("Failed to open the task's log file")?;
+    let mut log_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(paths.log_file())
+        .context("Failed to open the task's log file")?;
 
-        cmd.stdout(Stdio::from(log_file.try_clone().unwrap()));
-        cmd.stderr(Stdio::from(log_file));
+    let (reader, writer) = os_pipe::pipe().context("Failed to obtain a pipe")?;
+
+    cmd.stdout(writer.try_clone().context("Failed to clone the writer")?);
+    cmd.stderr(writer);
+
+    let mut handle = cmd.spawn().context("Failed to spawn the command")?;
+
+    drop(cmd);
+
+    let reader = BufReader::new(reader);
+
+    for line in reader.lines() {
+        let line = line.unwrap();
+        let line = format!("[{}] {}", get_now(), line);
+
+        if use_log_files {
+            log_file.write_all(line.as_bytes()).unwrap();
+        } else {
+            println!("{line}");
+        }
     }
 
-    let status = cmd.status().context("Failed to run the task's command")?;
+    let status = handle.wait().context("Failed to run the task's command")?;
 
     let ended_at = get_now();
 
