@@ -25,7 +25,7 @@ use crate::{
     at::At,
     cmd::{Action, Cmd, RegisterArgs, RunArgs, UnregisterArgs},
     daemon::{is_daemon_running, start_daemon, DaemonClient, RunningTask},
-    datetime::human_datetime,
+    datetime::{get_now, human_datetime},
     engine::runner,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
     sleep::sleep_ms,
@@ -272,13 +272,20 @@ fn inner_main() -> Result<()> {
             info!("List of upcoming / running tasks:");
             info!("");
 
-            let mut table = Table::new("{:>} {:<} {:<}");
+            let mut table = Table::new("{:>} {:<} {:<} {:<}");
+
+            let now = get_now();
 
             for RunningTask { task, started } in scheduled.running {
                 table.add_row(row!(
                     task.name.bright_cyan(),
                     "Running".bright_green(),
-                    started.to_string().bright_magenta()
+                    started.to_string().bright_magenta(),
+                    format!(
+                        "Started {} ago",
+                        started.replace_nanosecond(0).unwrap() - now.replace_nanosecond(0).unwrap()
+                    )
+                    .bright_blue()
                 ));
             }
 
@@ -286,7 +293,12 @@ fn inner_main() -> Result<()> {
                 table.add_row(row!(
                     task.name.bright_cyan(),
                     "Scheduled".bright_yellow(),
-                    time.to_string().bright_magenta()
+                    time.to_string().bright_magenta(),
+                    format!(
+                        "Will run in {}",
+                        time.replace_nanosecond(0).unwrap() - now.replace_nanosecond(0).unwrap()
+                    )
+                    .bright_blue()
                 ));
             }
 
