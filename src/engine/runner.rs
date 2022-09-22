@@ -66,6 +66,12 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
 
     drop(cmd);
 
+    if let Some(log_file) = &mut log_file {
+        log_file
+            .write_all(format!("===== @start {} =====\n\n", get_now()).as_bytes())
+            .unwrap();
+    }
+
     let reader = BufReader::new(reader);
 
     for line in reader.lines() {
@@ -78,6 +84,12 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
         } else {
             println!("{line}");
         }
+    }
+
+    if let Some(log_file) = &mut log_file {
+        log_file
+            .write_all(format!("\n===== @terminate {} =====\n", get_now()).as_bytes())
+            .unwrap();
     }
 
     let status = handle.wait().context("Failed to run the task's command")?;
