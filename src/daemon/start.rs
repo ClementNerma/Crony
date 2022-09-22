@@ -149,8 +149,6 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
             let running_tasks = &mut state_for_marker.write().unwrap().running_tasks;
 
             if running {
-                running_tasks.remove(&task.id).unwrap();
-            } else {
                 running_tasks.insert(
                     task.id,
                     RunningTask {
@@ -158,6 +156,8 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
                         started: get_now(),
                     },
                 );
+            } else {
+                running_tasks.remove(&task.id).unwrap();
             }
         };
 
