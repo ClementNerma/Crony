@@ -45,6 +45,9 @@ pub enum Action {
 
     #[clap(about = "Stop the daemon")]
     Stop,
+
+    #[clap(about = "Display the logs")]
+    Logs,
 }
 
 #[derive(Args)]

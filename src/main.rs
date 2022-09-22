@@ -18,6 +18,7 @@ use std::{fs, sync::atomic::Ordering};
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use colored::Colorize;
+use minus::Pager;
 use rand::random;
 use tabular::{row, Table};
 
@@ -327,6 +328,19 @@ fn inner_main() -> Result<()> {
             }
 
             success!("Daemon was successfully stopped!");
+        }
+
+        Action::Logs => {
+            let log_file = fs::read_to_string(paths.daemon_log_file)
+                .context("Failed to read the daemon's log file")?;
+
+            let output = Pager::new();
+
+            output
+                .set_text(&log_file)
+                .context("Failed to write log content to the pager")?;
+
+            minus::page_all(output).context("Pager failed")?;
         }
     }
 

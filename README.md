@@ -7,6 +7,7 @@ Crony is a replacement tool for the famous `cron` as well as `crontab`. It provi
 * Ability to name tasks
 * Ability to list all tasks, see their last execution date and exit status
 * Ability to register and unregister tasks without using a text edit
+* Logs displaying
 * All tasks' STDOUT and STDERR are logged to files by default
 * Complete execution history with start and end times as well as exit code
 * Direct execution of a task to test if it's working
@@ -26,6 +27,12 @@ To check the daemon's status at anytime:
 
 ```shell
 crony status
+```
+
+To display the logs:
+
+```shell
+crony logs
 ```
 
 To stop the daemon:
