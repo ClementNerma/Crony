@@ -67,6 +67,12 @@ To provide use a custom shell (default is `/bin/sh -c`):
 crony register hello-world --run "echo 'Hello world'" --at "m=*" --using "/bin/zsh -c"
 ```
 
+You can display the logs for this task with:
+
+```shell
+crony logs hello-world
+```
+
 If we want to remove the task:
 
 ```shell
