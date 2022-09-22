@@ -50,20 +50,14 @@ pub fn runner(
     cmd.arg(&task.cmd);
 
     if use_log_files {
-        let stdout_file = OpenOptions::new()
+        let log_file = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(paths.stdout_log_file())
-            .context("Failed to open the task's STDOUT log file")?;
+            .open(paths.log_file())
+            .context("Failed to open the task's log file")?;
 
-        let stderr_file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(paths.stderr_log_file())
-            .context("Failed to open the task's STDERR log file")?;
-
-        cmd.stdout(Stdio::from(stdout_file));
-        cmd.stderr(Stdio::from(stderr_file));
+        cmd.stdout(Stdio::from(log_file.try_clone().unwrap()));
+        cmd.stderr(Stdio::from(log_file));
     }
 
     let status = cmd.status().context("Failed to run the task's command")?;

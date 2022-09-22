@@ -48,23 +48,17 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
             .context("Failed to remove the existing socket file")?;
     }
 
-    let stdout_file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&paths.daemon_stdout_logfile)
-        .context("Failed to open the daemon's STDOUT log file")?;
-
-    let stderr_file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&paths.daemon_stderr_logfile)
-        .context("Failed to open the daemon's STDOUT log file")?;
-
     *SOCKET_FILE_PATH.lock().unwrap() = Some(paths.daemon_socket_file.clone());
 
+    let log_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&paths.daemon_log_file)
+        .context("Failed to open the daemon's log file")?;
+
     Daemon::new()
-        .stdout(stdout_file)
-        .stderr(stderr_file)
+        .stdout(log_file.try_clone().unwrap())
+        .stderr(log_file)
         .setup_post_fork_parent_hook(fork_exit)
         .start()
         .context("Failed to start the daemon")?;

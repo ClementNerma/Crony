@@ -12,8 +12,7 @@ pub struct Paths {
     pub tasks_file: PathBuf,
 
     pub daemon_socket_file: PathBuf,
-    pub daemon_stdout_logfile: PathBuf,
-    pub daemon_stderr_logfile: PathBuf,
+    pub daemon_log_file: PathBuf,
 }
 
 impl Paths {
@@ -27,8 +26,7 @@ impl Paths {
             old_tasks_dir: data_dir.join("tasks.old"),
 
             daemon_socket_file: daemon_dir.join("daemon.sock"),
-            daemon_stdout_logfile: daemon_dir.join("stdout.log"),
-            daemon_stderr_logfile: daemon_dir.join("stderr.log"),
+            daemon_log_file: daemon_dir.join("output.log"),
 
             daemon_dir,
             data_dir,
@@ -65,11 +63,7 @@ impl TaskPaths {
         self.task_dir.join("history")
     }
 
-    pub fn stdout_log_file(&self) -> PathBuf {
-        self.task_dir.join("stdout.log")
-    }
-
-    pub fn stderr_log_file(&self) -> PathBuf {
-        self.task_dir.join("stderr.log")
+    pub fn log_file(&self) -> PathBuf {
+        self.task_dir.join("output.log")
     }
 }
