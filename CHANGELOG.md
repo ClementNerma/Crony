@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.0 (2022-09-22)
+
+* NEW: Print messages datetime in log files
+* NEW: Add `logs [<task_name>]` subcommand
+* NEW: Unify STDOUT and STDERR log files
+
 ## v0.2.1 (2022-09-21)
 
 * NEW: `daemon-start`: added an `--ignore-started` flag
