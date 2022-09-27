@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.1 (2022-09-27)
+
+* NEW: Add a `history` subcommand
+* NEW: Add a global history file
+* Minor: Only use second precision for start and end time in logs
+* Minor: Remove sub-seconds in `list` subcommand
+* Minor: Update `scheduled` subcommand display
+* Minor: Update inserted line in tasks' logs
+* Fix: Correctly detect daemon shutdown in `stop` subcommand
+* Fix: Remove unneeded datetime formatting functions
+* Fix: inverted duration in `scheduled` subcommand
+
 ## v0.3.0 (2022-09-22)
 
 * NEW: Print messages datetime in log files
