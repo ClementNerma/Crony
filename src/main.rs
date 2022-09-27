@@ -282,12 +282,12 @@ fn inner_main() -> Result<()> {
                 table.add_row(row!(
                     task.name.bright_cyan(),
                     "Running".bright_green(),
-                    started.to_string().bright_magenta(),
                     format!(
-                        "Started {} ago",
+                        "since {}",
                         now.replace_nanosecond(0).unwrap() - started.replace_nanosecond(0).unwrap()
                     )
-                    .bright_blue()
+                    .bright_blue(),
+                    started.to_string().bright_magenta(),
                 ));
             }
 
@@ -295,12 +295,12 @@ fn inner_main() -> Result<()> {
                 table.add_row(row!(
                     task.name.bright_cyan(),
                     "Scheduled".bright_yellow(),
-                    time.to_string().bright_magenta(),
                     format!(
-                        "Will run in {}",
+                        "in {}",
                         time.replace_nanosecond(0).unwrap() - now.replace_nanosecond(0).unwrap()
                     )
-                    .bright_blue()
+                    .bright_blue(),
+                    time.to_string().bright_magenta(),
                 ));
             }
 
