@@ -26,7 +26,7 @@ use crate::{
     at::At,
     cmd::{Action, Cmd, HistoryArgs, LogsArgs, RegisterArgs, RunArgs, UnregisterArgs},
     daemon::{is_daemon_running, start_daemon, DaemonClient, RunningTask},
-    datetime::{get_now, human_datetime, human_duration},
+    datetime::get_now,
     engine::runner,
     history::History,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
@@ -72,12 +72,10 @@ fn inner_main() -> Result<()> {
                 let last_run = match history.find_last_for(task.id) {
                     None => "Never run".bright_black(),
                     Some(entry) => {
-                        let time = human_datetime(entry.started_at);
-
                         if entry.succeeded() {
-                            time.bright_green()
+                            entry.started_at.to_string().bright_green()
                         } else {
-                            time.bright_red()
+                            entry.started_at.to_string().bright_red()
                         }
                     }
                 };
@@ -421,8 +419,10 @@ fn inner_main() -> Result<()> {
                 table.add_row(row!(
                     "*".bright_cyan(),
                     display_name,
-                    human_datetime(entry.started_at).bright_blue(),
-                    human_duration(entry.ended_at - entry.started_at).bright_magenta(),
+                    entry.started_at.to_string().bright_blue(),
+                    (entry.ended_at - entry.started_at)
+                        .to_string()
+                        .bright_magenta(),
                     result
                 ));
             }

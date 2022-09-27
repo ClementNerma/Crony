@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    datetime::{get_now, human_datetime},
+    datetime::get_now,
     history::{HistoryEntry, TaskResult},
     info,
     paths::Paths,
@@ -30,7 +30,7 @@ pub fn runner(task: &Task, paths: &Paths, use_log_files: bool) -> Result<History
     info!(
         "Starting task '{}' on {}...",
         task.name.bright_yellow(),
-        human_datetime(started_at).bright_magenta()
+        started_at.to_string().bright_magenta()
     );
 
     let shell_cmd = task
@@ -110,7 +110,7 @@ pub fn runner(task: &Task, paths: &Paths, use_log_files: bool) -> Result<History
     info!(
         "Task '{}' finished running on {} ({})",
         task.name.bright_yellow(),
-        human_datetime(ended_at).bright_magenta(),
+        ended_at.to_string().bright_magenta(),
         match result {
             TaskResult::Success => format!("{}", result).bright_green(),
             TaskResult::Failed { code: _ } => format!("{}", result).bright_red(),
