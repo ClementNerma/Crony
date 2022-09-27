@@ -8,7 +8,7 @@ use crate::{
     datetime::{get_now, human_datetime},
     history::{HistoryEntry, TaskResult},
     info,
-    paths::TaskPaths,
+    paths::Paths,
     save::append_to_history,
     task::Task,
     warn,
@@ -17,7 +17,10 @@ use anyhow::{bail, Context, Result};
 
 pub static DEFAULT_SHELL_CMD: &str = "/bin/sh -c";
 
-pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<HistoryEntry> {
+pub fn runner(task: &Task, paths: &Paths, use_log_files: bool) -> Result<HistoryEntry> {
+    let global_history_file = &paths.global_history_file;
+    let paths = paths.task_paths(&task.name);
+
     if !paths.dir().exists() {
         bail!("Task's directory was not found!");
     }
@@ -128,7 +131,8 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
             task.name
         );
     } else {
-        append_to_history(paths, &entry)?;
+        append_to_history(&paths.history_file(), &entry)?;
+        append_to_history(global_history_file, &entry)?;
     }
 
     Ok(entry)

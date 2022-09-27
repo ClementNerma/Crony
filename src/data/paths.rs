@@ -10,6 +10,7 @@ pub struct Paths {
     pub old_tasks_dir: PathBuf,
 
     pub tasks_file: PathBuf,
+    pub global_history_file: PathBuf,
 
     pub daemon_socket_file: PathBuf,
     pub daemon_log_file: PathBuf,
@@ -21,6 +22,7 @@ impl Paths {
 
         Self {
             tasks_file: data_dir.join("tasks.json"),
+            global_history_file: data_dir.join("global-history"),
 
             tasks_dir: data_dir.join("tasks"),
             old_tasks_dir: data_dir.join("tasks.old"),

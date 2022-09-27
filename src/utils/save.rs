@@ -1,7 +1,7 @@
 use std::{
     fs::{self, OpenOptions},
     io::Write,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use anyhow::{Context, Result};
@@ -75,11 +75,11 @@ pub fn read_history_if_exists(task_paths: &TaskPaths) -> Result<History> {
     History::parse(&raw).context("Failed to parse the history file")
 }
 
-pub fn append_to_history(task_paths: &TaskPaths, entry: &HistoryEntry) -> Result<()> {
+pub fn append_to_history(history_file: &Path, entry: &HistoryEntry) -> Result<()> {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(&task_paths.history_file())
+        .open(&history_file)
         .context("Failed to open the history file")?;
 
     writeln!(file, "{}", entry.encode())?;

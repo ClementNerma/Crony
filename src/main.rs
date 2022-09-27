@@ -237,7 +237,7 @@ fn inner_main() -> Result<()> {
                 .get(&name)
                 .with_context(|| format!("Task '{}' does not exist.", name.bright_yellow()))?;
 
-            runner(task, &paths.task_paths(&task.name), use_log_files)?;
+            runner(task, &paths, use_log_files)?;
         }
 
         Action::Start(args) => {

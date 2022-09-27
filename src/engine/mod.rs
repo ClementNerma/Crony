@@ -33,7 +33,7 @@ pub fn start_engine(
         move |task| {
             (marker)(task, true);
 
-            let result = runner(task, &paths.task_paths(&task.name), !direct_output);
+            let result = runner(task, &paths, !direct_output);
 
             (marker)(task, false);
 
