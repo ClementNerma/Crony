@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    datetime::get_now,
+    datetime::{get_now, get_now_second_precision},
     history::{HistoryEntry, TaskResult},
     info,
     paths::Paths,
@@ -71,7 +71,7 @@ pub fn runner(task: &Task, paths: &Paths, use_log_files: bool) -> Result<History
 
     if let Some(log_file) = &mut log_file {
         log_file
-            .write_all(format!("=======> Started on {}\n\n", get_now()).as_bytes())
+            .write_all(format!("=======> Started on {}\n\n", get_now_second_precision()).as_bytes())
             .unwrap();
     }
 
@@ -91,7 +91,9 @@ pub fn runner(task: &Task, paths: &Paths, use_log_files: bool) -> Result<History
 
     if let Some(log_file) = &mut log_file {
         log_file
-            .write_all(format!("\n=======> Ended on {}\n\n\n", get_now()).as_bytes())
+            .write_all(
+                format!("\n=======> Ended on {}\n\n\n", get_now_second_precision()).as_bytes(),
+            )
             .unwrap();
     }
 
