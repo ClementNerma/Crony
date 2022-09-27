@@ -285,7 +285,7 @@ fn inner_main() -> Result<()> {
                     started.to_string().bright_magenta(),
                     format!(
                         "Started {} ago",
-                        started.replace_nanosecond(0).unwrap() - now.replace_nanosecond(0).unwrap()
+                        now.replace_nanosecond(0).unwrap() - started.replace_nanosecond(0).unwrap()
                     )
                     .bright_blue()
                 ));
