@@ -68,7 +68,7 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
 
     if let Some(log_file) = &mut log_file {
         log_file
-            .write_all(format!("===== @start {} =====\n\n", get_now()).as_bytes())
+            .write_all(format!("=======> Started on {}\n\n", get_now()).as_bytes())
             .unwrap();
     }
 
@@ -88,7 +88,7 @@ pub fn runner(task: &Task, paths: &TaskPaths, use_log_files: bool) -> Result<His
 
     if let Some(log_file) = &mut log_file {
         log_file
-            .write_all(format!("\n===== @terminate {} =====\n", get_now()).as_bytes())
+            .write_all(format!("\n=======> Ended on {}\n\n\n", get_now()).as_bytes())
             .unwrap();
     }
 
