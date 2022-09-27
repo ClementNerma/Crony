@@ -311,14 +311,51 @@ fn inner_main() -> Result<()> {
             debug!("Asking the daemon to stop...");
 
             let mut client = DaemonClient::connect(&paths.daemon_socket_file)?;
-            client.stop()?;
+
+            match client.stop() {
+                Ok(()) => {}
+                Err(err) => {
+                    if let Ok(false) = is_daemon_running(&paths.daemon_socket_file) {
+                        success!("Daemon was successfully stopped!");
+                        return Ok(());
+                    }
+
+                    return Err(err);
+                }
+            }
 
             debug!("Request succesfully transmitted, waiting for the daemon to actually stop...");
 
             let mut last_running = 0;
+            let mut had_error = false;
 
-            while is_daemon_running(&paths.daemon_socket_file)? {
-                let running = client.running_tasks()?;
+            loop {
+                match is_daemon_running(&paths.daemon_socket_file) {
+                    Ok(true) => {}
+                    Ok(false) => break,
+                    Err(err) => {
+                        if had_error {
+                            return Err(err);
+                        }
+
+                        had_error = true;
+                        sleep_ms(20);
+                        continue;
+                    }
+                }
+
+                let running = match client.running_tasks() {
+                    Ok(running) => running,
+                    Err(err) => {
+                        if had_error {
+                            return Err(err);
+                        }
+
+                        had_error = true;
+                        sleep_ms(20);
+                        continue;
+                    }
+                };
 
                 if running != last_running {
                     info!("Waiting for {} task(s) to complete...", running);
