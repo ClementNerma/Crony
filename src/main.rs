@@ -24,10 +24,11 @@ use tabular::{row, Table};
 
 use crate::{
     at::At,
-    cmd::{Action, Cmd, LogsArgs, RegisterArgs, RunArgs, UnregisterArgs},
+    cmd::{Action, Cmd, HistoryArgs, LogsArgs, RegisterArgs, RunArgs, UnregisterArgs},
     daemon::{is_daemon_running, start_daemon, DaemonClient, RunningTask},
-    datetime::{get_now, human_datetime},
+    datetime::{get_now, human_datetime, human_duration},
     engine::runner,
+    history::History,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
     sleep::sleep_ms,
     task::Task,
@@ -357,6 +358,76 @@ fn inner_main() -> Result<()> {
                 .context("Failed to write log content to the pager")?;
 
             minus::page_all(output).context("Pager failed")?;
+        }
+
+        Action::History(HistoryArgs {
+            task_name,
+            last_entries,
+        }) => {
+            let log_file = match task_name {
+                Some(task_name) => {
+                    if !tasks.contains_key(&task_name) {
+                        bail!("Provided task does not exist.");
+                    }
+
+                    paths.task_paths(&task_name).history_file()
+                }
+                None => paths.global_history_file,
+            };
+
+            let history = fs::read_to_string(&log_file).context("Failed to read history file")?;
+            let history = History::parse(&history).context("Failed to parse history file")?;
+
+            let entries = history.entries();
+
+            if entries.is_empty() {
+                info!("History is empty.");
+                return Ok(());
+            }
+
+            info!(
+                "Found {} entries in history",
+                entries.len().to_string().bright_yellow()
+            );
+            info!("");
+
+            let last_entries = match last_entries {
+                Some(count) => {
+                    if count >= entries.len() {
+                        &entries[entries.len() - 1 - count..entries.len() - 1]
+                    } else {
+                        entries
+                    }
+                }
+                None => entries,
+            };
+
+            let mut table = Table::new("{:>} {:>} {:<} {:<} {:<}");
+
+            for entry in last_entries.iter().rev() {
+                let exists = tasks.values().any(|task| task.id == entry.task_id);
+
+                let display_name = match exists {
+                    true => entry.task_name.bright_yellow(),
+                    false => format!("{} (deleted)", entry.task_name).bright_red(),
+                };
+
+                let result = entry.result.encode();
+                let result = match entry.succeeded() {
+                    true => result.bright_green(),
+                    false => result.bright_red(),
+                };
+
+                table.add_row(row!(
+                    "*".bright_cyan(),
+                    display_name,
+                    human_datetime(entry.started_at).bright_blue(),
+                    human_duration(entry.ended_at - entry.started_at).bright_magenta(),
+                    result
+                ));
+            }
+
+            println!("{table}");
         }
     }
 

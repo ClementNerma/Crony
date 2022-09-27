@@ -48,6 +48,9 @@ pub enum Action {
 
     #[clap(about = "Display the logs")]
     Logs(LogsArgs),
+
+    #[clap(about = "Display the execution history")]
+    History(HistoryArgs),
 }
 
 #[derive(Args)]
@@ -99,4 +102,13 @@ pub struct RunArgs {
 pub struct LogsArgs {
     #[clap(help = "Show the logs of a task")]
     pub task_name: Option<String>,
+}
+
+#[derive(Args)]
+pub struct HistoryArgs {
+    #[clap(help = "Show the history of a task")]
+    pub task_name: Option<String>,
+
+    #[clap(help = "Show the N last entries")]
+    pub last_entries: Option<usize>,
 }

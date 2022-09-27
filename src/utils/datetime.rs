@@ -1,6 +1,6 @@
 use anyhow::Context;
 use once_cell::sync::Lazy;
-use time::{format_description, OffsetDateTime, UtcOffset};
+use time::{format_description, Duration, OffsetDateTime, UtcOffset};
 
 use crate::warn;
 
@@ -33,4 +33,33 @@ pub fn human_datetime(datetime: OffsetDateTime) -> String {
         .format(&format_description::well_known::Rfc2822)
         .context("Failed to stringify start date")
         .unwrap()
+}
+
+pub fn human_duration(duration: Duration) -> String {
+    let mut secs = duration.whole_seconds();
+
+    assert!(
+        secs >= 0,
+        "Number of seconds is negative in provided duration"
+    );
+
+    let mut times = String::new();
+
+    if secs > 86400 {
+        times.push_str(&format!("{}D", secs / 86400));
+        secs = secs - (secs / 86400 * 86400);
+    }
+
+    if secs > 3600 {
+        times.push_str(&format!("{}h", secs / 3600));
+        secs = secs - (secs / 3600 * 3600);
+    }
+
+    if secs > 60 {
+        times.push_str(&format!("{}m", secs / 60));
+        secs = secs - (secs / 60 * 60);
+    }
+
+    times.push_str(&format!("{secs}s"));
+    times
 }

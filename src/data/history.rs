@@ -24,6 +24,10 @@ impl History {
         Ok(Self { entries })
     }
 
+    pub fn entries(&self) -> &[HistoryEntry] {
+        &self.entries
+    }
+
     pub fn find_last_for(&self, task_id: u64) -> Option<&HistoryEntry> {
         self.entries
             .iter()
