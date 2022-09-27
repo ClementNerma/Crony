@@ -72,10 +72,12 @@ fn inner_main() -> Result<()> {
                 let last_run = match history.find_last_for(task.id) {
                     None => "Never run".bright_black(),
                     Some(entry) => {
+                        let time = entry.started_at.replace_nanosecond(0).unwrap().to_string();
+
                         if entry.succeeded() {
-                            entry.started_at.to_string().bright_green()
+                            time.bright_green()
                         } else {
-                            entry.started_at.to_string().bright_red()
+                            time.bright_red()
                         }
                     }
                 };
