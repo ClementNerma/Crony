@@ -2,6 +2,15 @@
 name = "crony"
 version = "0.3.1"
 edition = "2021"
+authors = ["Clément Nerma <clement.nerma@gmail.com>"]
+license = "Apache-2.0"
+description = "A full-featured replacement for `cron` and `crontab`"
+readme = "README.md"
+repository = "https://github.com/ClementNerma/Crony"
+
+[[bin]]
+name = "crony"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.65"
