@@ -458,10 +458,16 @@ fn inner_main() -> Result<()> {
                 table.add_row(row!(
                     "*".bright_cyan(),
                     display_name,
-                    entry.started_at.to_string().bright_blue(),
-                    (entry.ended_at - entry.started_at)
+                    entry
+                        .started_at
+                        .replace_nanosecond(0)
+                        .unwrap()
                         .to_string()
-                        .bright_magenta(),
+                        .bright_blue(),
+                    (entry.ended_at.replace_nanosecond(0).unwrap()
+                        - entry.started_at.replace_nanosecond(0).unwrap())
+                    .to_string()
+                    .bright_magenta(),
                     result
                 ));
             }
