@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.2 (2022-10-07)
+
+* Fix: don't let dangling socket listening threads after client has exited
+
 ## v0.3.1 (2022-09-27)
 
 * NEW: Add a `history` subcommand

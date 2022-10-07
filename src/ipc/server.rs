@@ -44,7 +44,7 @@ fn serve_client<A: DeserializeOwned, B: Serialize, S>(
     mut client: UnixStream,
     process: Arc<impl Fn(A, Arc<S>) -> B>,
     state: Arc<S>,
-) -> ! {
+) {
     loop {
         let mut message = String::new();
 
@@ -57,8 +57,7 @@ fn serve_client<A: DeserializeOwned, B: Serialize, S>(
         }
 
         if message.is_empty() {
-            sleep_ms(100);
-            continue;
+            break;
         }
 
         let Request { id, content } = match serde_json::from_str::<Request<A>>(&message) {
