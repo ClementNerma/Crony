@@ -54,25 +54,16 @@ mod functions {
         }
 
         let upcoming = loop {
-            println!("A");
-
             let state = state.read().unwrap();
 
-            println!("B");
-
             if let Some(Some(ref scheduled)) = state.scheduled_request {
-                println!("C");
                 break scheduled.clone();
             }
 
-            println!("D");
             drop(state);
-            println!("E");
 
             sleep_ms(50);
         };
-
-        println!("YES!");
 
         Scheduled {
             upcoming,
