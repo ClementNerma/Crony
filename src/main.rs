@@ -18,7 +18,6 @@ use std::{fs, sync::atomic::Ordering};
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use colored::Colorize;
-use minus::Pager;
 use rand::random;
 use tabular::{row, Table};
 
@@ -29,6 +28,7 @@ use crate::{
     datetime::get_now,
     engine::runner,
     history::History,
+    paging::run_pager,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
     sleep::sleep_ms,
     task::Task,
@@ -368,7 +368,11 @@ fn inner_main() -> Result<()> {
             success!("Daemon was successfully stopped!");
         }
 
-        Action::Logs(LogsArgs { task_name }) => {
+        Action::Logs(LogsArgs {
+            task_name,
+            pager,
+            no_less_options,
+        }) => {
             let log_file = match task_name {
                 Some(task_name) => {
                     if !tasks.contains_key(&task_name) {
@@ -385,16 +389,14 @@ fn inner_main() -> Result<()> {
                 return Ok(());
             }
 
-            let log_content =
+            let logs =
                 fs::read_to_string(&log_file).context("Failed to read the daemon's log file")?;
 
-            let output = Pager::new();
+            let pager = pager
+                .or_else(|| std::env::var("PAGER").ok())
+                .unwrap_or_else(|| "less".to_owned());
 
-            output
-                .set_text(log_content)
-                .context("Failed to write log content to the pager")?;
-
-            minus::page_all(output).context("Pager failed")?;
+            run_pager(&logs, &pager, no_less_options)?;
         }
 
         Action::History(HistoryArgs {

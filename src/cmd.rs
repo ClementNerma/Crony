@@ -102,6 +102,18 @@ pub struct RunArgs {
 pub struct LogsArgs {
     #[clap(help = "Show the logs of a task")]
     pub task_name: Option<String>,
+
+    #[clap(
+        long,
+        help = "Use an alternative pager (default: PAGER env var, or 'less')"
+    )]
+    pub pager: Option<String>,
+
+    #[clap(
+        long,
+        help = "Don't provide recommanded arguments when pager is 'less'"
+    )]
+    pub no_less_options: bool,
 }
 
 #[derive(Args)]

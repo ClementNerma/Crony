@@ -18,7 +18,6 @@ clap = { version = "4.1.8", features = ["derive"] }
 colored = "2.0.0"
 daemonize-me = "2.0.1"
 dirs = "4.0.0"
-minus = { version = "5.2.0", features = ["static_output", "search"] }
 once_cell = "1.17.1"
 os_pipe = "1.1.3"
 pomsky = "0.9.0"
