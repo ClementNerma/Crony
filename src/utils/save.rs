@@ -60,7 +60,7 @@ pub fn write_tasks(paths: &Paths, tasks: &Tasks) -> Result<()> {
     let raw =
         serde_json::to_string_pretty(tasks).context("Failed to stringify the provided tasks")?;
 
-    fs::write(&paths.tasks_file, &raw).context("Failed to write the tasks file")
+    fs::write(&paths.tasks_file, raw).context("Failed to write the tasks file")
 }
 
 pub fn read_history_if_exists(task_paths: &TaskPaths) -> Result<History> {
@@ -79,7 +79,7 @@ pub fn append_to_history(history_file: &Path, entry: &HistoryEntry) -> Result<()
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(&history_file)
+        .open(history_file)
         .context("Failed to open the history file")?;
 
     writeln!(file, "{}", entry.encode())?;

@@ -391,7 +391,7 @@ fn inner_main() -> Result<()> {
             let output = Pager::new();
 
             output
-                .set_text(&log_content)
+                .set_text(log_content)
                 .context("Failed to write log content to the pager")?;
 
             minus::page_all(output).context("Pager failed")?;
