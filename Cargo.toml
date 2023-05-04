@@ -1,6 +1,6 @@
 [package]
 name = "crony"
-version = "0.3.4"
+version = "0.3.5"
 edition = "2021"
 authors = ["Clément Nerma <clement.nerma@gmail.com>"]
 license = "Apache-2.0"
@@ -28,3 +28,10 @@ serde = { version = "1.0.159", features = ["derive"] }
 serde_json = "1.0.95"
 tabular = "0.2.0"
 time = { version = "0.3.20", features = ["local-offset", "parsing", "formatting", "serde"] }
+
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
+[workspace.metadata.dist]
+targets = ["x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]
