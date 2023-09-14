@@ -26,7 +26,6 @@ use crate::{
     cmd::{Action, Cmd, HistoryArgs, LogsArgs, RegisterArgs, RunArgs, UnregisterArgs},
     daemon::{is_daemon_running, start_daemon, DaemonClient, RunningTask},
     datetime::get_now,
-    engine::runner,
     history::History,
     paging::run_pager,
     save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
@@ -258,13 +257,10 @@ fn inner_main() -> Result<()> {
             debug!("Daemon is running, sending a test request...");
 
             let mut client = DaemonClient::connect(&socket_file)?;
-            let res = client.hello()?;
+            let pid = client.hello()?;
 
-            if res == "Hello" {
-                success!("Daemon is running and responding to requests.");
-            } else {
-                error!("Daemon responsed unsuccessfully to a test request.");
-            }
+            success!("Daemon is running and responding to requests.");
+            debug!("Daemon PID: {pid}");
         }
 
         Action::Scheduled => {

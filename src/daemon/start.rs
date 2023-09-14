@@ -1,7 +1,8 @@
 use std::{
     fs::{self, OpenOptions},
+    io::ErrorKind,
     os::unix::net::UnixListener,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{atomic::Ordering, Arc, Mutex, RwLock},
 };
 
@@ -16,6 +17,7 @@ use crate::{
         DaemonClient, DaemonStartArgs,
     },
     datetime::get_now,
+    debug,
     engine::start_engine,
     error, error_anyhow, info,
     ipc::serve_on_socket,
@@ -25,6 +27,7 @@ use crate::{
     sleep::sleep_ms,
     success,
     task::Task,
+    warn,
 };
 
 static SOCKET_FILE_PATH: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
@@ -43,10 +46,7 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
         bail!("Daemon is already running.");
     }
 
-    if paths.daemon_socket_file.exists() {
-        fs::remove_file(&paths.daemon_socket_file)
-            .context("Failed to remove the existing socket file")?;
-    }
+    let socket = create_socket(&paths.daemon_socket_file)?;
 
     *SOCKET_FILE_PATH.lock().unwrap() = Some(paths.daemon_socket_file.clone());
 
@@ -65,23 +65,36 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
 
     PRINT_MESSAGES_DATETIME.store(true, Ordering::SeqCst);
 
-    if let Err(err) = daemon_core(paths, args) {
+    if let Err(err) = daemon_core(paths, args, socket) {
         error!("Daemon exited with an error: {:?}", err);
         std::process::exit(1);
     }
 
-    #[allow(unreachable_code)]
-    {
-        unreachable!()
+    // We should never reach this part
+    unreachable!()
+}
+
+fn create_socket(socket_path: &Path) -> Result<UnixListener> {
+    match UnixListener::bind(socket_path) {
+        Ok(socket) => Ok(socket),
+        Err(err) => match err.kind() {
+            ErrorKind::AddrInUse => {
+                warn!("Socket file exists but daemon is not running, restarting...");
+
+                fs::remove_file(socket_path).context("Failed to remove socket file")?;
+
+                create_socket(socket_path)
+            }
+            _ => bail!("Failed to connect socket: {err}"),
+        },
     }
 }
 
-fn daemon_core(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
+fn daemon_core(paths: &Paths, args: &DaemonStartArgs, socket: UnixListener) -> Result<()> {
     info!("Successfully started the daemon on {}", get_now());
     info!("Setting up the socket...");
 
-    let socket = UnixListener::bind(&paths.daemon_socket_file)
-        .context("Failed to create socket with the provided path")?;
+    // TODO
 
     info!("Launching a separate thread for the socket listener...");
 
@@ -194,17 +207,17 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
 }
 
 fn fork_exit(_parent_pid: i32, _child_pid: i32) -> ! {
-    let guard = SOCKET_FILE_PATH.lock().unwrap();
-    let socket_path = guard.as_ref().unwrap();
+    let socket_path = SOCKET_FILE_PATH.lock().unwrap().as_ref().unwrap().clone();
 
-    while !socket_path.exists() {
+    while !is_daemon_running(&socket_path).unwrap() {
         sleep_ms(50);
     }
 
-    let mut client = DaemonClient::connect(socket_path).unwrap();
-    client.hello().unwrap();
+    let mut client = DaemonClient::connect(&socket_path).unwrap();
+    let daemon_pid = client.hello().unwrap();
 
     success!("Successfully started Crony daemon!");
+    debug!("Daemon PID: {daemon_pid}");
 
     std::process::exit(0);
 }

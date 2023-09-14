@@ -10,7 +10,7 @@ pub struct Cmd {
     #[clap(short, long, help = "Path to the data directory")]
     pub data_dir: Option<PathBuf>,
 
-    #[clap(short, long, help = "Display debug messages")]
+    #[clap(short, long, global = true, help = "Display debug messages")]
     pub verbose: bool,
 
     #[clap(subcommand)]
