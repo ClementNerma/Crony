@@ -92,10 +92,6 @@ fn create_socket(socket_path: &Path) -> Result<UnixListener> {
 
 fn daemon_core(paths: &Paths, args: &DaemonStartArgs, socket: UnixListener) -> Result<()> {
     info!("Successfully started the daemon on {}", get_now());
-    info!("Setting up the socket...");
-
-    // TODO
-
     info!("Launching a separate thread for the socket listener...");
 
     let state = Arc::new(RwLock::new(State::new()));
