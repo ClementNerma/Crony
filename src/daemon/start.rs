@@ -81,7 +81,14 @@ fn create_socket(socket_path: &Path) -> Result<UnixListener> {
             ErrorKind::AddrInUse => {
                 warn!("Socket file exists but daemon is not running, restarting...");
 
-                fs::remove_file(socket_path).context("Failed to remove socket file")?;
+                if let Err(err) = fs::remove_file(socket_path) {
+                    match err.kind() {
+                        // Sometimes the file will vanish just after the existence check, so we ignore "not found" errors
+                        ErrorKind::NotFound => {},
+                        // Handle other errors
+                        _ => bail!("Failed to remove socket file: {err:?}"),
+                    }
+                }
 
                 create_socket(socket_path)
             }
