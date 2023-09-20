@@ -65,8 +65,7 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
     PRINT_MESSAGES_DATETIME.store(true, Ordering::SeqCst);
 
     if let Err(err) = daemon_core(paths, args, socket) {
-        error!("Daemon exited with an error: {:?}", err);
-        std::process::exit(1);
+        panic!("Daemon exited with an error: {:?}", err);
     }
 
     // We should never reach this part
@@ -105,10 +104,12 @@ fn daemon_core(paths: &Paths, args: &DaemonStartArgs, socket: UnixListener) -> R
 
     std::thread::spawn(|| serve_on_socket(socket, process, state_server));
 
-    daemon_core_loop(paths, args, state)
+    daemon_core_loop(paths, args, state);
+
+    Ok(())
 }
 
-fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<State>>) -> ! {
+fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<State>>){
     info!("Starting the engine...");
 
     loop {
@@ -140,7 +141,7 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
                 error!("Failed to remove the socket file: {err}");
             }
 
-            std::process::exit(0);
+            break;
         }
 
         let tasks = match read_tasks(paths) {
@@ -200,11 +201,6 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
             let state = state.read().unwrap();
             state.must_reload_tasks || state.exit
         });
-    }
-
-    #[allow(unreachable_code)]
-    {
-        unreachable!()
     }
 }
 
