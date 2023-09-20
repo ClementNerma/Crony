@@ -137,7 +137,7 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
             info!("[Exiting] Now exiting.");
 
             if let Err(err) = fs::remove_file(&paths.daemon_socket_file) {
-                error!("Failed to remove the socket file, this might cause problem during the next start: {err}");
+                error!("Failed to remove the socket file: {err}");
             }
 
             std::process::exit(0);
