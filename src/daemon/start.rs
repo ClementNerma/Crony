@@ -64,12 +64,9 @@ pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
 
     PRINT_MESSAGES_DATETIME.store(true, Ordering::SeqCst);
 
-    if let Err(err) = daemon_core(paths, args, socket) {
-        panic!("Daemon exited with an error: {:?}", err);
-    }
-
-    // We should never reach this part
-    unreachable!()
+    // NOTE: This will return a Result to main to ensure the process exits normally after
+    //       running all destructors (Drop) correctly
+    daemon_core(paths, args, socket).context("Daemon failed with an error")
 }
 
 fn create_socket(socket_path: &Path) -> Result<UnixListener> {
@@ -116,7 +113,7 @@ fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<Sta
         if state.read().unwrap().exit {
             info!("Exiting safely as requested...");
 
-            state.write().unwrap().exit = false;
+            state.write().unwrap().exiting = true;
 
             let mut last_running = 0;
 

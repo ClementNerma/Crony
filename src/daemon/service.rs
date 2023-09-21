@@ -31,7 +31,7 @@ mod functions {
     pub fn stop(state: Arc<State>) {
         state.write().unwrap().exit = true;
 
-        while state.read().unwrap().exit {
+        while !state.read().unwrap().exiting {
             sleep_ms(20);
         }
     }
@@ -81,6 +81,7 @@ mod functions {
 pub struct State {
     pub must_reload_tasks: bool,
     pub exit: bool,
+    pub exiting: bool,
     pub running_tasks: HashMap<u64, RunningTask>,
     pub scheduled_request: Option<Option<Vec<(Task, OffsetDateTime)>>>,
 }
@@ -90,6 +91,7 @@ impl State {
         Self {
             must_reload_tasks: false,
             exit: false,
+            exiting: false,
             running_tasks: HashMap::new(),
             scheduled_request: None,
         }
