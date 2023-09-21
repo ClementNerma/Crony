@@ -79,7 +79,7 @@ fn create_socket(socket_path: &Path) -> Result<UnixListener> {
                 if let Err(err) = fs::remove_file(socket_path) {
                     match err.kind() {
                         // Sometimes the file will vanish just after the existence check, so we ignore "not found" errors
-                        ErrorKind::NotFound => {},
+                        ErrorKind::NotFound => {}
                         // Handle other errors
                         _ => bail!("Failed to remove socket file: {err:?}"),
                     }
@@ -103,10 +103,12 @@ fn daemon_core(paths: &Paths, args: &DaemonStartArgs, socket: UnixListener) -> R
 
     daemon_core_loop(paths, args, state);
 
+    info!("Daemon exited.");
+
     Ok(())
 }
 
-fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<State>>){
+fn daemon_core_loop(paths: &Paths, args: &DaemonStartArgs, state: Arc<RwLock<State>>) {
     info!("Starting the engine...");
 
     loop {

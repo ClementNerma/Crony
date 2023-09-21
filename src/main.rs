@@ -248,7 +248,6 @@ fn inner_main() -> Result<()> {
 
         Action::Start(args) => {
             start_daemon(&paths, &args)?;
-            info!("Daemon exited.");
         }
 
         Action::Status => {
