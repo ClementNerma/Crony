@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use dirs::config_dir;
 
 use crate::{
     history::{History, HistoryEntry},
@@ -14,8 +13,8 @@ use crate::{
 };
 
 pub fn construct_data_dir_paths(custom_data_dir: Option<PathBuf>) -> Result<Paths> {
-    let default_data_dir = config_dir()
-        .context("Failed to find user's config directory")?
+    let default_data_dir = dirs::data_dir()
+        .context("Failed to determine path to the user's data directory")?
         .join("crony");
 
     let data_dir = custom_data_dir.unwrap_or(default_data_dir);
