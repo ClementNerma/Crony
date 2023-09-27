@@ -20,7 +20,7 @@ pub fn construct_data_dir_paths(custom_data_dir: Option<PathBuf>) -> Result<Path
     let data_dir = custom_data_dir.unwrap_or(default_data_dir);
 
     if !data_dir.is_dir() {
-        fs::create_dir(&data_dir).context("Failed to create the data directory")?;
+        fs::create_dir_all(&data_dir).context("Failed to create the data directory")?;
     }
 
     let paths = Paths::new(data_dir);
