@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.0 (2023-09-29)
+
+* Switch history format to JSON for better inter-opability
+* Implement history file exclusive access to avoid filesystem data races
+
 ## v0.3.2 (2022-10-07)
 
 * Fix: don't let dangling socket listening threads after client has exited

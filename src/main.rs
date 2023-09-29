@@ -28,7 +28,7 @@ use crate::{
     datetime::get_now,
     history::History,
     paging::run_pager,
-    save::{construct_data_dir_paths, read_history_if_exists, read_tasks, write_tasks},
+    save::{construct_data_dir_paths, read_history_file, read_tasks, write_tasks},
     sleep::sleep_ms,
     task::Task,
 };
@@ -39,7 +39,7 @@ fn main() -> ! {
         Err(err) => {
             error_anyhow!(err);
             1
-        },
+        }
     };
 
     // Terminate all threads immediatly (useful for daemon)
@@ -72,7 +72,8 @@ fn inner_main() -> Result<()> {
             let mut table = Table::new("{:>} {:<} {:<} {:<} {:<} {:<}");
 
             for task in tasks.values() {
-                let history = read_history_if_exists(&paths.task_paths(&task.name))?;
+                let history = read_history_file(&paths.task_paths(&task.name))?
+                    .unwrap_or_else(History::empty);
 
                 let last_run = match history.find_last_for(task.id) {
                     None => "Never run".bright_black(),
@@ -107,7 +108,8 @@ fn inner_main() -> Result<()> {
             let mut errors = vec![];
 
             for task in tasks.values() {
-                let history = read_history_if_exists(&paths.task_paths(&task.name))?;
+                let history = read_history_file(&paths.task_paths(&task.name))?
+                    .unwrap_or_else(History::empty);
 
                 if let Some(last_run) = history.find_last_for(task.id) {
                     if !last_run.succeeded() {
@@ -422,7 +424,8 @@ fn inner_main() -> Result<()> {
             };
 
             let history = fs::read_to_string(&log_file).context("Failed to read history file")?;
-            let history = History::parse(&history).context("Failed to parse history file")?;
+            let history = serde_json::from_str::<History>(&history)
+                .context("Failed to parse history file")?;
 
             let entries = history.entries();
 
@@ -458,7 +461,7 @@ fn inner_main() -> Result<()> {
                     false => format!("{} (deleted)", entry.task_name).bright_red(),
                 };
 
-                let result = entry.result.encode();
+                let result = format!("{}", entry.result);
                 let result = match entry.succeeded() {
                     true => result.bright_green(),
                     false => result.bright_red(),

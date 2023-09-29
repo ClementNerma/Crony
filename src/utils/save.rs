@@ -1,6 +1,7 @@
 use std::{
     fs::{self, OpenOptions},
-    io::Write,
+    io::Read,
+    os::unix::prelude::FileExt,
     path::{Path, PathBuf},
 };
 
@@ -62,26 +63,41 @@ pub fn write_tasks(paths: &Paths, tasks: &Tasks) -> Result<()> {
     fs::write(&paths.tasks_file, raw).context("Failed to write the tasks file")
 }
 
-pub fn read_history_if_exists(task_paths: &TaskPaths) -> Result<History> {
+pub fn read_history_file(task_paths: &TaskPaths) -> Result<Option<History>> {
     let history_file = task_paths.history_file();
 
     if !history_file.is_file() {
-        return Ok(History::empty());
+        return Ok(None);
     }
 
     let raw = fs::read_to_string(&history_file).context("Failed to read history file")?;
 
-    History::parse(&raw).context("Failed to parse the history file")
+    let history = serde_json::from_str(&raw).context("Failed to parse the history file")?;
+
+    Ok(Some(history))
 }
 
-pub fn append_to_history(history_file: &Path, entry: &HistoryEntry) -> Result<()> {
+pub fn append_to_history(history_file: &Path, entry: HistoryEntry) -> Result<()> {
     let mut file = OpenOptions::new()
         .create(true)
-        .append(true)
+        .read(true)
+        .write(true)
         .open(history_file)
         .context("Failed to open the history file")?;
 
-    writeln!(file, "{}", entry.encode())?;
+    let mut content = String::new();
+    file.read_to_string(&mut content)
+        .context("Failed to read history file")?;
+
+    let mut history =
+        serde_json::from_str::<History>(&content).context("Failed to parse history file")?;
+
+    history.append(entry);
+
+    let content = serde_json::to_string(&history).unwrap();
+
+    file.write_all_at(content.as_bytes(), 0)
+        .context("Failed to update history file")?;
 
     Ok(())
 }

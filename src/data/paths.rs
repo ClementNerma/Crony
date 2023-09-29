@@ -22,7 +22,7 @@ impl Paths {
 
         Self {
             tasks_file: data_dir.join("tasks.json"),
-            global_history_file: data_dir.join("global-history"),
+            global_history_file: data_dir.join("history.json"),
 
             tasks_dir: data_dir.join("tasks"),
             old_tasks_dir: data_dir.join("tasks.old"),

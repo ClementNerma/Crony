@@ -133,8 +133,8 @@ pub fn runner(task: &Task, paths: &Paths, use_log_files: bool) -> Result<History
             task.name
         );
     } else {
-        append_to_history(&paths.history_file(), &entry)?;
-        append_to_history(global_history_file, &entry)?;
+        append_to_history(&paths.history_file(), entry.clone())?;
+        append_to_history(global_history_file, entry.clone())?;
     }
 
     Ok(entry)
