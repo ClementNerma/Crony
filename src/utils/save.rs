@@ -89,8 +89,11 @@ pub fn append_to_history(history_file: &Path, entry: HistoryEntry) -> Result<()>
     file.read_to_string(&mut content)
         .context("Failed to read history file")?;
 
-    let mut history =
-        serde_json::from_str::<History>(&content).context("Failed to parse history file")?;
+    let mut history = if content.is_empty() {
+        History::empty()
+    }  else {    
+        serde_json::from_str::<History>(&content).context("Failed to parse history file")?
+    };
 
     history.append(entry);
 
