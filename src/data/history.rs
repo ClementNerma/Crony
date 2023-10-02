@@ -21,11 +21,10 @@ impl History {
         self.entries.push(entry);
     }
 
-    pub fn find_last_for(&self, task_id: u64) -> Option<&HistoryEntry> {
+    pub fn for_task(&self, task_id: u64) -> impl Iterator<Item = &HistoryEntry> {
         self.entries
             .iter()
-            .rev()
-            .find(|entry| entry.task_id == task_id)
+            .filter(move |entry| entry.task_id == task_id)
     }
 }
 

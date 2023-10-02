@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.0 (2023-10-02)
+
+* Use log files instead of full directories for tasks
+* Only use a global history instead of multiple ones
+
 ## v0.4.0 (2023-09-29)
 
 * Switch history format to JSON for better inter-opability

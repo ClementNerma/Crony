@@ -69,13 +69,12 @@ fn inner_main() -> Result<()> {
             info!("Found {} tasks:", tasks.len().to_string().bright_yellow());
             info!("");
 
+            let history = read_history_file(&paths.history_file)?.unwrap_or_else(History::empty);
+
             let mut table = Table::new("{:>} {:<} {:<} {:<} {:<} {:<}");
 
             for task in tasks.values() {
-                let history = read_history_file(&paths.task_paths(&task.name))?
-                    .unwrap_or_else(History::empty);
-
-                let last_run = match history.find_last_for(task.id) {
+                let last_run = match history.for_task(task.id).last() {
                     None => "Never run".bright_black(),
                     Some(entry) => {
                         let time = entry.started_at.replace_nanosecond(0).unwrap().to_string();
@@ -107,11 +106,10 @@ fn inner_main() -> Result<()> {
         Action::Check => {
             let mut errors = vec![];
 
-            for task in tasks.values() {
-                let history = read_history_file(&paths.task_paths(&task.name))?
-                    .unwrap_or_else(History::empty);
+            let history = read_history_file(&paths.history_file)?.unwrap_or_else(History::empty);
 
-                if let Some(last_run) = history.find_last_for(task.id) {
+            for task in tasks.values() {
+                if let Some(last_run) = history.for_task(task.id).last() {
                     if !last_run.succeeded() {
                         errors.push(format!(
                             "Task '{}' failed on {}.",
@@ -140,19 +138,19 @@ fn inner_main() -> Result<()> {
                 bail!("The provided name is invalid, only letters, digits, dashes and underscores are allowed.");
             }
 
-            let at = At::parse(&at)?;
+            let parsed_at = At::parse(&at)?;
 
             let task = Task {
                 id: random(),
                 name: name.clone(),
-                at,
+                at: parsed_at,
                 cmd: run,
                 shell: using,
             };
 
-            let next = task.at.next_occurrence().context(
-                "Failed to find a valid next occurrence for the provided repetition pattern",
-            )?;
+            let next = task.at.next_occurrence().with_context(|| {
+                format!("Failed to find a valid next occurrence for repetition pattern: {at}",)
+            })?;
 
             if let Some(existing) = tasks.get(&name) {
                 let mut simili = existing.clone();
@@ -167,18 +165,13 @@ fn inner_main() -> Result<()> {
                 if !force_override {
                     bail!("A task with this name already exists!");
                 }
-
-                warn!("WARNING: Going to override the existing task!");
-
-                fs::rename(
-                    paths.task_paths(&name).dir(),
-                    paths.generate_old_task_dir_name(&name),
-                )
-                .context("Failed to move the previous task's directory")?;
             }
 
-            fs::create_dir(paths.task_paths(&name).dir())
-                .context("Failed to create the task's directory")?;
+            fs::write(
+                paths.task_log_file(&name),
+                format!("-- Task created at {} --", get_now()),
+            )
+            .context("Failed to create the task's log file")?;
 
             tasks.insert(name.clone(), task);
 
@@ -211,11 +204,8 @@ fn inner_main() -> Result<()> {
                 bail!("Task '{}' does not exist.", name.bright_yellow());
             }
 
-            fs::rename(
-                paths.task_paths(&name).dir(),
-                paths.generate_old_task_dir_name(&name),
-            )
-            .context("Failed to move the previous task's directory")?;
+            fs::remove_file(paths.task_log_file(&name))
+                .context("Failed to move the task's log file")?;
 
             tasks.remove(&name);
 
@@ -388,7 +378,7 @@ fn inner_main() -> Result<()> {
                         bail!("Provided task does not exist.");
                     }
 
-                    paths.task_paths(&task_name).log_file()
+                    paths.task_log_file(&task_name)
                 }
                 None => paths.daemon_log_file,
             };
@@ -398,8 +388,7 @@ fn inner_main() -> Result<()> {
                 return Ok(());
             }
 
-            let logs =
-                fs::read_to_string(&log_file).context("Failed to read the daemon's log file")?;
+            let logs = fs::read_to_string(&log_file).context("Failed to read the log file")?;
 
             let pager = pager
                 .or_else(|| std::env::var("PAGER").ok())
@@ -412,22 +401,21 @@ fn inner_main() -> Result<()> {
             task_name,
             last_entries,
         }) => {
-            let log_file = match task_name {
-                Some(task_name) => {
-                    if !tasks.contains_key(&task_name) {
-                        bail!("Provided task does not exist.");
-                    }
+            let history =
+                fs::read_to_string(&paths.history_file).context("Failed to read history file")?;
 
-                    paths.task_paths(&task_name).history_file()
-                }
-                None => paths.global_history_file,
-            };
-
-            let history = fs::read_to_string(&log_file).context("Failed to read history file")?;
             let history = serde_json::from_str::<History>(&history)
                 .context("Failed to parse history file")?;
 
-            let entries = history.entries();
+            let entries = if let Some(task_name) = task_name {
+                let task = tasks
+                    .get(&task_name)
+                    .context("Provided task was not found")?;
+
+                history.for_task(task.id).cloned().collect()
+            } else {
+                history.entries().to_vec()
+            };
 
             if entries.is_empty() {
                 info!("History is empty.");
@@ -445,10 +433,10 @@ fn inner_main() -> Result<()> {
                     if count >= entries.len() {
                         &entries[entries.len() - 1 - count..entries.len() - 1]
                     } else {
-                        entries
+                        &entries
                     }
                 }
-                None => entries,
+                None => &entries,
             };
 
             let mut table = Table::new("{:>} {:>} {:<} {:<} {:<}");

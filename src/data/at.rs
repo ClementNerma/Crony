@@ -41,7 +41,7 @@ impl At {
     pub fn parse(at: &str) -> Result<Self> {
         let capture = AT_STR_PARSER
             .captures(at)
-            .context("Invalid at format provided")?;
+            .context("Invalid repetition format provided")?;
 
         let months = Self::validate_captured(&capture, "months", 12)?;
         let days = Self::validate_captured(&capture, "days", 31)?;

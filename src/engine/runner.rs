@@ -11,19 +11,13 @@ use crate::{
     paths::Paths,
     save::append_to_history,
     task::Task,
-    warn,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 
 pub static DEFAULT_SHELL_CMD: &str = "/bin/sh -c";
 
 pub fn runner(task: &Task, paths: &Paths, use_log_files: bool) -> Result<HistoryEntry> {
-    let global_history_file = &paths.global_history_file;
-    let paths = paths.task_paths(&task.name);
-
-    if !paths.dir().exists() {
-        bail!("Task's directory was not found!");
-    }
+    let global_history_file = &paths.history_file;
 
     let started_at = get_now();
 
@@ -53,7 +47,7 @@ pub fn runner(task: &Task, paths: &Paths, use_log_files: bool) -> Result<History
             OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open(paths.log_file())
+                .open(paths.task_log_file(&task.name))
                 .context("Failed to open the task's log file")?,
         )
     } else {
@@ -127,15 +121,12 @@ pub fn runner(task: &Task, paths: &Paths, use_log_files: bool) -> Result<History
         result,
     };
 
-    if !paths.dir().exists() {
-        warn!(
-            "Task '{}' was removed during its execution, skipping history update.",
-            task.name
-        );
-    } else {
-        append_to_history(&paths.history_file(), entry.clone())?;
-        append_to_history(global_history_file, entry.clone())?;
-    }
+    append_to_history(global_history_file, entry.clone()).with_context(|| {
+        format!(
+            "Failed to append an entry to history file at path: {}",
+            global_history_file.display()
+        )
+    })?;
 
     Ok(entry)
 }
