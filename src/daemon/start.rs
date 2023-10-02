@@ -32,11 +32,6 @@ use crate::{
 static SOCKET_FILE_PATH: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
 
 pub fn start_daemon(paths: &Paths, args: &DaemonStartArgs) -> Result<()> {
-    if !paths.daemon_dir.exists() {
-        fs::create_dir(&paths.daemon_dir)
-            .context("Failed to create the daemon's data directory")?;
-    }
-
     if is_daemon_running(&paths.daemon_socket_file)? {
         if args.ignore_started {
             return Ok(());

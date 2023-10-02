@@ -1,6 +1,6 @@
 [package]
 name = "crony"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 authors = ["Clément Nerma <clement.nerma@gmail.com>"]
 license = "Apache-2.0"
