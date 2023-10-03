@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.2 (2023-10-03)
+
+* Prevent errors when computer is waking from sleep
+
 ## v0.5.0 (2023-10-02)
 
 * Use log files instead of full directories for tasks

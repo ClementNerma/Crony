@@ -9,6 +9,7 @@ use time::OffsetDateTime;
 use crate::{
     datetime::{get_now, get_now_second_precision},
     info, notice,
+    sleep::sleep_ms,
     task::{Task, Tasks},
 };
 
@@ -79,22 +80,25 @@ pub fn run_tasks(
 
         let task_runner = Arc::clone(&task_runner);
 
-        notice!(
-            "Running task '{}' late of {} second(s).",
-            task.name,
-            (now - planned_for).whole_seconds()
-        );
+        let late = (now - planned_for).whole_seconds();
+
+        notice!("Running task '{}' late of {} second(s).", task.name, late);
+
+        if late > 60 {
+            notice!("More than 60 seconds late ; the computer may have been to sleep.");
+            notice!("Waiting 30 more seconds to ensure all capabilities (e.g. internet access) are available again.");
+
+            sleep_ms(30);
+        }
 
         let queue = Arc::clone(&queue);
 
         std::thread::spawn(move || {
             task_runner.read().unwrap()(&task);
 
-            let mut queue = queue.write().unwrap();
-
             let planned = get_new_upcoming_moment(get_now(), &task.at, planned_for).unwrap();
 
-            queue.insert(task.id, planned);
+            queue.write().unwrap().insert(task.id, planned);
         });
     }
 }
