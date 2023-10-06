@@ -88,7 +88,7 @@ pub fn run_tasks(
             notice!("More than 60 seconds late ; the computer may have been to sleep.");
             notice!("Waiting 30 more seconds to ensure all capabilities (e.g. internet access) are available again.");
 
-            sleep_ms(30);
+            sleep_ms(30_000);
         }
 
         let queue = Arc::clone(&queue);
